@@ -39,6 +39,14 @@
 						"type": "string",
 						"default": "doxygen",
 						"description": "Path to the doxygen executable"
+					},
+					"doxygen_runner.configuration_filenames": {
+						"type": "array",
+						"default": [
+							"Doxyfile",
+							"doxygen.conf"
+						],
+						"description": "Regular expression(s) to check a CMakeLists.txt file for (possible) GTest targets"
 					}
 				}
 			}

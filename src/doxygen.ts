@@ -30,7 +30,9 @@ export class Doxygen {
 
         let tmp = this.findDoxyFile(filepath);
         if (tmp === undefined) {
-            vscode.window.showErrorMessage("Cannot generate Doxygen documentation, no opened files available.");
+            let config = vscode.workspace.getConfiguration('doxygen_runner');
+            let configuration_filenames = config['configuration_filenames'];
+            vscode.window.showErrorMessage(`No Doxygen configuration found (${configuration_filenames}).`);
             return;
         }
         let doxyfile = tmp[1];
@@ -124,10 +126,15 @@ export class Doxygen {
             }
         }
 
+        // load config file names
+        let config = vscode.workspace.getConfiguration('doxygen_runner');
+        let configuration_filenames = config['configuration_filenames'];
+        
         // go up until we find a unique Doxygen config
         let basedir = filepath;
         while (basedir != vscode.workspace.rootPath) {
-            let doxyfiles = glob.sync([`${basedir}/**/Doxyfile`, `${basedir}/**/doxygen.conf`]);
+            let globs = configuration_filenames.map((name) => `${basedir}/**/${name}`);
+            let doxyfiles = glob.sync(globs);
             if (doxyfiles.length == 1) {
                 return [basedir, doxyfiles[0].toString()];
             } else if (doxyfiles.length > 1) {
