@@ -24,6 +24,10 @@ export class Doxygen {
 
     // generate the doxygen documentation for the project containing `filepath`
     public generateDocumentation(filepath: string) {
+        if(!this.check()) {
+            return;
+        }
+
         let tmp = this.findDoxyFile(filepath);
         if (tmp === undefined) {
             vscode.window.showErrorMessage("Cannot generate Doxygen documentation, no opened files available.");
@@ -41,7 +45,9 @@ export class Doxygen {
             };
 
             // call doxygen in a subprocess
-            let stdout = child_process.execSync(`doxygen ${doxyfile}  2>&1 1>/dev/null`, options);
+            let config = vscode.workspace.getConfiguration('doxygen_runner');
+            let executable = config['doxygen_command'];
+            let stdout = child_process.execSync(`${executable} ${doxyfile}  2>&1 1>/dev/null`, options);
 
             // spawn a task to analyze the output of doxygen and match problems
             this.parseOutputTask.execution = new vscode.ShellExecution(`echo "${stdout}"`);
@@ -62,6 +68,10 @@ export class Doxygen {
 
     // display the index of the doxygen documentation for the project containing `filepath`
     public viewIndex(filepath: string) {
+        if(!this.check()) {
+            return;
+        }
+
         let tmp = this.findDoxyFile(filepath);
         if (tmp === undefined) {
             vscode.window.showErrorMessage("Cannot show Doxygen documentation, no opened files available.");
@@ -78,6 +88,19 @@ export class Doxygen {
             this.viewDoxygen(index_files[0]);
         } else if (index_files.length > 1) {
             vscode.window.showQuickPick(index_files).then((file) => this.viewDoxygen(file));
+        }
+    }
+
+    // check if everything is set up correctly
+    public check() {
+        try {
+            let config = vscode.workspace.getConfiguration('doxygen_runner');
+            let executable = config['doxygen_command'];
+            let output = child_process.execSync(`${executable} -v`);
+            return true;
+        } catch(err) {
+            vscode.window.showErrorMessage("Doxygen is not installed or not correcly configured.");
+            return false;
         }
     }
 

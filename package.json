@@ -31,6 +31,18 @@
 				"title": "View Doxygen documentation"
 			}
 		],
+		"configuration": [
+			{
+				"title": "Doxygen Runner Settings",
+				"properties": {
+					"doxygen_runner.doxygen_command": {
+						"type": "string",
+						"default": "doxygen",
+						"description": "Path to the doxygen executable"
+					}
+				}
+			}
+		],
 		"taskDefinitions": [
 			{
 				"type": "extension.doxygen-runner.parse_doxygen_output",
