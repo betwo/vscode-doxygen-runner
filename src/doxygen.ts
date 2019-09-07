@@ -9,6 +9,8 @@ export class Doxygen {
 
     private active_panel: vscode.WebviewPanel | undefined;
     private project_name: string;
+    private view_history: string[] = [];
+    private view_future: string[] = [];
 
     constructor(public context: vscode.ExtensionContext) {
         let kind: vscode.TaskDefinition = {
@@ -120,7 +122,7 @@ export class Doxygen {
     }
 
     // display one file of the documentation in a web view
-    private viewDoxygen(uri: string) {
+    private viewDoxygen(uri: string, purge_future_stack: boolean = true) {
         if (uri === undefined) return;
 
         // split the url into the file and the remaining fragment
@@ -141,6 +143,12 @@ export class Doxygen {
         while (doc_root !== '/' && fs.existsSync(index)) {
             doc_root = path.dirname(doc_root);
             index = path.join(doc_root, 'index.html');
+        }
+
+        // update history
+        this.view_history.push(html_file);
+        if(purge_future_stack) {
+            this.view_future = [];
         }
 
         // read the file contents, adjust them and display them
@@ -188,15 +196,30 @@ export class Doxygen {
     }
     $('a').click(function() {   
       vscode.postMessage({
-      command: 'link',
-      text: $(this).attr('href')
+        command: 'link',
+        url: $(this).attr('href')
       });
     });
     $('area').click(function() {   
       vscode.postMessage({
-      command: 'link',
-      text: $(this).attr('href')
+        command: 'link',
+        url: $(this).attr('href')
       });
+    });
+    $(window).bind('keydown', function(e) {
+      if(event.getModifierState("Alt")) {
+          if(e.key === 'ArrowLeft') {
+            vscode.postMessage({
+                command: 'history',
+                direction: 'back'
+            });
+        } else if(e.key === 'ArrowRight') {
+            vscode.postMessage({
+                command: 'history',
+                direction: 'forward'
+            });
+        }
+      }
     });
   });
   }())
@@ -204,6 +227,31 @@ export class Doxygen {
   </html>`);
 
         return html;
+    }
+
+    private historyBack() {
+        // with 0 or 1 pages in the history, there is nothing to go back to
+        if(this.view_history.length <= 1) {
+            return;
+        }
+
+        // invariant: view history.length > 1
+
+        // take the current view and push it to the future stack
+        let current = this.view_history.pop();
+        this.view_future.push(current); 
+
+        // invariant: view history.length > 0
+        let last = this.view_history.pop();
+        this.viewDoxygen(last, false);
+    }
+
+    private historyForward() {
+        if(this.view_future.length == 0) {
+            return;
+        }
+        let next = this.view_future.pop();
+        this.viewDoxygen(next, false);
     }
 
     // get the currently opened file or undefined
@@ -233,8 +281,21 @@ export class Doxygen {
         );
 
         this.active_panel.webview.onDidReceiveMessage((ev) => {
-            if (ev.command === "link") {
-                this.viewDoxygen(path.join(doc_root, ev.text));
+            switch(ev.command) {
+                case "link":
+                    this.viewDoxygen(path.join(doc_root, ev.url));
+                    break;
+                case "history":
+                    switch(ev.direction) {
+                        case 'back':
+                            this.historyBack();
+                            break;
+                        case 'forward':
+                            this.historyForward();
+                            break;
+                    }
+                    break;
+
             }
         },
             undefined,
