@@ -1,118 +1,118 @@
 {
-	"name": "vscode-doxygen-runner",
-	"displayName": "Doxygen Runner",
-	"publisher": "betwo",
-	"license": "MIT",
-	"description": "Support for generating and previewing doxygen documentation",
-	"version": "1.0.0",
-	"icon": "assets/icon.png",
-	"repository": {
-		"type": "git",
-		"url": "https://github.com/betwo/vscode-doxygen-runner"
-	},
-	"engines": {
-		"vscode": "^1.30.0"
-	},
-	"categories": [
-		"Other"
-	],
-	"activationEvents": [
-		"*"
-	],
-	"main": "./out/extension.js",
-	"contributes": {
-		"commands": [
-			{
-				"command": "extension.doxygen-runner.generate_doxygen",
-				"title": "Generate Doxygen documentation"
-			},
-			{
-				"command": "extension.doxygen-runner.view_doxygen",
-				"title": "View Doxygen documentation"
-			}
-		],
-		"configuration": [
-			{
-				"title": "Doxygen Runner Settings",
-				"properties": {
-					"doxygen_runner.doxygen_command": {
-						"type": "string",
-						"default": "doxygen",
-						"description": "Path to the doxygen executable"
-					},
-					"doxygen_runner.configuration_filenames": {
-						"type": "array",
-						"default": [
-							"Doxyfile",
-							"doxygen.conf"
-						],
-						"description": "Regular expression(s) to check a CMakeLists.txt file for (possible) GTest targets"
-					}
-				}
-			}
-		],
-		"taskDefinitions": [
-			{
-				"type": "extension.doxygen-runner.parse_doxygen_output",
-				"properties": {
-					"task": {
-						"type": "string",
-						"description": "Parse doxygen output"
-					}
-				}
-			}
-		],
-		"problemMatchers": [
-			{
-				"name": "doxygen-runner",
-				"fileLocation": "absolute",
-				"owner": "doxygen-runner",
-				"pattern": [
-					{
-						"regexp": "^(.*):(\\d+):\\s+(warning|error):\\s+(.*)[^:]$",
-						"file": 1,
-						"line": 2,
-						"severity": 3,
-						"message": 4
-					}
-				]
-			},
-			{
-				"name": "doxygen-runner-multiline",
-				"fileLocation": "absolute",
-				"owner": "doxygen-runner",
-				"pattern": [
-					{
-						"regexp": "^(.*):(\\d+):\\s+(warning|error):\\s+(.*):$",
-						"file": 1,
-						"line": 2,
-						"severity": 3,
-						"message": 4
-					},
-					{
-						"regexp": "^(\\s+[^\\s].*)$",
-						"message": 1,
-						"loop": true
-					}
-				]
-			}
-		]
-	},
-	"scripts": {
-		"vscode:prepublish": "npm run compile",
-		"compile": "tsc -p ./",
-		"watch": "tsc -watch -p ./",
-		"postinstall": "node ./node_modules/vscode/bin/install",
-		"test": "npm run compile && node ./node_modules/vscode/bin/test"
-	},
-	"devDependencies": {
-		"vscode": "^1.1.34",
-		"typescript": "^3.3.3333",
-		"@types/node": "^8.10.25"
-	},
-	"dependencies": {
-		"fast-glob": "^2.2.7",
-		"child_process": "^1.0.2"
-	},
-	"extensionDependencies": []
+  "name": "vscode-doxygen-runner",
+  "displayName": "Doxygen Runner",
+  "publisher": "betwo",
+  "license": "MIT",
+  "description": "Support for generating and previewing doxygen documentation",
+  "version": "1.1.0",
+  "icon": "assets/icon.png",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/betwo/vscode-doxygen-runner"
+  },
+  "engines": {
+    "vscode": "^1.30.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [
+    "*"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "extension.doxygen-runner.generate_doxygen",
+        "title": "Generate Doxygen documentation"
+      },
+      {
+        "command": "extension.doxygen-runner.view_doxygen",
+        "title": "View Doxygen documentation"
+      }
+    ],
+    "configuration": [
+      {
+        "title": "Doxygen Runner Settings",
+        "properties": {
+          "doxygen_runner.doxygen_command": {
+            "type": "string",
+            "default": "doxygen",
+            "description": "Path to the doxygen executable"
+          },
+          "doxygen_runner.configuration_filenames": {
+            "type": "array",
+            "default": [
+              "Doxyfile",
+              "doxygen.conf"
+            ],
+            "description": "Regular expression(s) to check a CMakeLists.txt file for (possible) GTest targets"
+          }
+        }
+      }
+    ],
+    "taskDefinitions": [
+      {
+        "type": "extension.doxygen-runner.parse_doxygen_output",
+        "properties": {
+          "task": {
+            "type": "string",
+            "description": "Parse doxygen output"
+          }
+        }
+      }
+    ],
+    "problemMatchers": [
+      {
+        "name": "doxygen-runner",
+        "fileLocation": "absolute",
+        "owner": "doxygen-runner",
+        "pattern": [
+          {
+            "regexp": "^(.*):(\\d+):\\s+(warning|error):\\s+(.*)[^:]$",
+            "file": 1,
+            "line": 2,
+            "severity": 3,
+            "message": 4
+          }
+        ]
+      },
+      {
+        "name": "doxygen-runner-multiline",
+        "fileLocation": "absolute",
+        "owner": "doxygen-runner",
+        "pattern": [
+          {
+            "regexp": "^(.*):(\\d+):\\s+(warning|error):\\s+(.*):$",
+            "file": 1,
+            "line": 2,
+            "severity": 3,
+            "message": 4
+          },
+          {
+            "regexp": "^(\\s+[^\\s].*)$",
+            "message": 1,
+            "loop": true
+          }
+        ]
+      }
+    ]
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "postinstall": "node ./node_modules/vscode/bin/install",
+    "test": "npm run compile && node ./node_modules/vscode/bin/test"
+  },
+  "devDependencies": {
+    "vscode": "^1.1.34",
+    "typescript": "^3.3.3333",
+    "@types/node": "^8.10.25"
+  },
+  "dependencies": {
+    "fast-glob": "^2.2.7",
+    "child_process": "^1.0.2"
+  },
+  "extensionDependencies": []
 }
