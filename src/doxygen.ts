@@ -24,7 +24,7 @@ export class Doxygen {
 
     // generate the doxygen documentation for the project containing `filepath`
     public generateDocumentation(filepath: string) {
-        if(!this.check()) {
+        if (!this.check()) {
             return;
         }
 
@@ -38,39 +38,61 @@ export class Doxygen {
         let doxyfile = tmp[1];
         let basedir = tmp[0].toString();
 
-        this.parseConfig(doxyfile);
+        Promise.resolve(vscode.window.withProgress({
+            location: vscode.ProgressLocation.Notification,
+            title: `Generating doxygen for ${doxyfile}`,
+            cancellable: false,
 
-        try {
-            let options: child_process.ExecSyncOptionsWithStringEncoding = {
-                'cwd': basedir,
-                'encoding': 'utf8'
-            };
+        }, async (progress, token) => {
+            this.parseConfig(doxyfile);
+            
+            return this.runDoxygen(basedir, doxyfile).then((output) => {
+                this.parseOutputTask.execution = new vscode.ShellExecution(`echo "${output}"`);
+                
+                vscode.tasks.executeTask(this.parseOutputTask).then(
+                    (task: vscode.TaskExecution) => {
+                        // progress.report({ increment: 100, message: `Done` });
+                        vscode.commands.executeCommand('extension.doxygen-runner.parse_doxygen_output');
+                        // display the generated documentation
+                        vscode.commands.executeCommand('extension.doxygen-runner.view_doxygen', basedir);
+                    },
+                    vscode.window.showErrorMessage
+                );
+            });
+        }));
 
-            // call doxygen in a subprocess
-            let config = vscode.workspace.getConfiguration('doxygen_runner');
-            let executable = config['doxygen_command'];
-            let stdout = child_process.execSync(`${executable} ${doxyfile}  2>&1 1>/dev/null`, options);
+        console.log("DONE");
+    }
 
-            // spawn a task to analyze the output of doxygen and match problems
-            this.parseOutputTask.execution = new vscode.ShellExecution(`echo "${stdout}"`);
-            vscode.tasks.executeTask(this.parseOutputTask).then(
-                (task: vscode.TaskExecution) => {
-                    vscode.commands.executeCommand('extension.doxygen-runner.parse_doxygen_output');
-                },
-                vscode.window.showErrorMessage
-            );
+    private runDoxygen(basedir, doxyfile) {
+        // spawn a task to analyze the output of doxygen and match problems
+        let options: child_process.ExecSyncOptionsWithStringEncoding = {
+            'cwd': basedir,
+            'encoding': 'utf8'
+        };
+        // call doxygen in a subprocess
+        let config = vscode.workspace.getConfiguration('doxygen_runner');
+        let executable = config['doxygen_command'];
 
-            // display the generated documentation
-            vscode.commands.executeCommand('extension.doxygen-runner.view_doxygen', basedir);
-        } catch (err) {
-            console.log(`error: ${err}`);
-            vscode.window.showErrorMessage(err);
-        }
+        return new Promise(
+            (resolve, reject) => {
+                child_process.exec(`${executable} ${doxyfile}  2>&1 1>/dev/null`, options,
+                    (err, output) => {
+                        if (err) {
+                            console.log(`error: ${err}`);
+                            vscode.window.showErrorMessage(err.message);
+                            reject();
+                            return;
+                        }
+
+                        resolve(output);
+                    });
+            });
     }
 
     // display the index of the doxygen documentation for the project containing `filepath`
     public viewIndex(filepath: string) {
-        if(!this.check()) {
+        if (!this.check()) {
             return;
         }
 
@@ -100,7 +122,7 @@ export class Doxygen {
             let executable = config['doxygen_command'];
             let output = child_process.execSync(`${executable} -v`);
             return true;
-        } catch(err) {
+        } catch (err) {
             vscode.window.showErrorMessage("Doxygen is not installed or not correcly configured.");
             return false;
         }
@@ -111,7 +133,7 @@ export class Doxygen {
         let lines = fs.readFileSync(doxyfile);
         for (let row of lines.toString().split('\n')) {
             let match = row.match(/^\s*PROJECT_NAME\s*=\s*"(.*)"\s*$/);
-            if(match) {
+            if (match) {
                 this.project_name = match[1];
             }
         }
@@ -129,7 +151,7 @@ export class Doxygen {
         // load config file names
         let config = vscode.workspace.getConfiguration('doxygen_runner');
         let configuration_filenames = config['configuration_filenames'];
-        
+
         // go up until we find a unique Doxygen config
         let basedir = filepath;
         while (basedir != vscode.workspace.rootPath) {
@@ -177,7 +199,7 @@ export class Doxygen {
 
         // update history
         this.view_history.push(html_file);
-        if(purge_future_stack) {
+        if (purge_future_stack) {
             this.view_future = [];
         }
 
@@ -261,7 +283,7 @@ export class Doxygen {
 
     private historyBack() {
         // with 0 or 1 pages in the history, there is nothing to go back to
-        if(this.view_history.length <= 1) {
+        if (this.view_history.length <= 1) {
             return;
         }
 
@@ -269,7 +291,7 @@ export class Doxygen {
 
         // take the current view and push it to the future stack
         let current = this.view_history.pop();
-        this.view_future.push(current); 
+        this.view_future.push(current);
 
         // invariant: view history.length > 0
         let last = this.view_history.pop();
@@ -277,7 +299,7 @@ export class Doxygen {
     }
 
     private historyForward() {
-        if(this.view_future.length == 0) {
+        if (this.view_future.length == 0) {
             return;
         }
         let next = this.view_future.pop();
@@ -311,12 +333,12 @@ export class Doxygen {
         );
 
         this.active_panel.webview.onDidReceiveMessage((ev) => {
-            switch(ev.command) {
+            switch (ev.command) {
                 case "link":
                     this.viewDoxygen(path.join(doc_root, ev.url));
                     break;
                 case "history":
-                    switch(ev.direction) {
+                    switch (ev.direction) {
                         case 'back':
                             this.historyBack();
                             break;
