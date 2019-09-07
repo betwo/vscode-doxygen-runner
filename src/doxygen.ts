@@ -134,7 +134,7 @@ export class Doxygen {
     private parseConfig(doxyfile: string) {
         let lines = fs.readFileSync(doxyfile);
         for (let row of lines.toString().split('\n')) {
-            let match = row.match(/^\s*PROJECT_NAME\s*=\s*"(.*)"\s*$/);
+            let match = row.match(/^\s*PROJECT_NAME\s*=\s*"?([^"]*)"?\s*$/);
             if (match) {
                 this.project_name = match[1];
             }
