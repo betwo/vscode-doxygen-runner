@@ -10,6 +10,7 @@ export class Doxygen {
     private active_panel = new Map<string, vscode.WebviewPanel>();
     private project_name: string;
     private output_directory: string;
+    private html_root_directory: string;
     private view_history: string[] = [];
     private view_future: string[] = [];
 
@@ -103,12 +104,8 @@ export class Doxygen {
         let doc_directory = tmp[0].toString();
         let doxyfile = tmp[1];
 
-        let index_files = glob.sync([`${doc_directory}/${this.output_directory}/**/index.html`]).map((x) => String(x));
-        if (index_files.length == 1) {
-            this.viewDoxygen(index_files[0]);
-        } else if (index_files.length > 1) {
-            vscode.window.showQuickPick(index_files).then((file) => this.viewDoxygen(file));
-        }
+        this.html_root_directory = `${doc_directory}/${this.output_directory}/html`
+        this.viewDoxygen('index.html');
     }
 
     // check if everything is set up correctly
@@ -140,8 +137,8 @@ export class Doxygen {
                 let match = row.match(/^\s*OUTPUT_DIRECTORY\s*=\s*"?([^"]*)"?\s*$/);
                 if (match) {
                     let output_directory = match[1];
-                    if(output_directory.endsWith(path.sep)) {
-                        output_directory = output_directory.substr(0, output_directory.length - 1); 
+                    if (output_directory.endsWith(path.sep)) {
+                        output_directory = output_directory.substr(0, output_directory.length - 1);
                     }
                     this.output_directory = output_directory;
                 }
@@ -216,11 +213,11 @@ export class Doxygen {
     }
 
     // convert a relative path to a vscode resource for the web view
-    private pathToResource(doc_root: string, path: string) {
-        if(path.startsWith('http:') || path.startsWith('https:')) {
+    private pathToResource(path: string) {
+        if (path.startsWith('http:') || path.startsWith('https:')) {
             return path;
         }
-        return vscode.Uri.file(`${doc_root}/${path}`).with({ scheme: "vscode-resource" }).toString(true);
+        return vscode.Uri.file(`${this.html_root_directory}/${path}`).with({ scheme: "vscode-resource" }).toString(true);
     }
 
     // display one file of the documentation in a web view
@@ -231,7 +228,7 @@ export class Doxygen {
         let html_file: string;
         let fragment: string;
         let anchor_idx = uri.indexOf('#');
-        if (anchor_idx > 0) {
+        if (anchor_idx >= 0) {
             html_file = uri.substr(0, anchor_idx);
             fragment = uri.substr(anchor_idx + 1);
         } else {
@@ -239,12 +236,9 @@ export class Doxygen {
             fragment = undefined;
         }
 
-        // Find the root of the documentation folder
-        let doc_root = path.dirname(html_file);
-        let index = undefined;
-        while (doc_root !== '/' && fs.existsSync(index)) {
-            doc_root = path.dirname(doc_root);
-            index = path.join(doc_root, 'index.html');
+        if (fragment !== undefined && html_file === "") {
+            // in-page anchor link
+            html_file = this.view_history.pop();
         }
 
         // update history
@@ -254,23 +248,24 @@ export class Doxygen {
         }
 
         // read the file contents, adjust them and display them
-        fs.readFile(html_file, (error, content) => {
+        let abs_html_file = path.join(this.html_root_directory, html_file);
+        fs.readFile(abs_html_file, (error, content) => {
             if (error) {
                 vscode.window.showErrorMessage(error.message);
                 return;
             }
 
             // create a web view if we don't have one
-            if (!this.active_panel.has(doc_root)) {
-                this.createPanel(doc_root);
+            if (!this.active_panel.has(this.html_root_directory)) {
+                this.createPanel(this.html_root_directory);
             }
 
-            this.active_panel.get(doc_root).webview.html = this.injectHtml(content.toString(), doc_root, fragment);
+            this.active_panel.get(this.html_root_directory).webview.html = this.injectHtml(content.toString(), fragment);
         });
     }
 
     // modify the html code of the doxygen documenation to work within a web view
-    private injectHtml(html: string, doc_root: string, fragment: string) {
+    private injectHtml(html: string, fragment: string) {
 
         html = html.replace('<head>', `<head>\n` +
             `<meta http-equiv="Content-Security-Policy" content="` +
@@ -279,22 +274,31 @@ export class Doxygen {
             `style-src vscode-resource: 'unsafe-inline';">`)
 
         html = html.replace(RegExp('(href=.)(.*\.css)([^>]*>)', 'g'),
-            (match, pre, path, post) => pre + this.pathToResource(doc_root, path) + post);
+            (match, pre, path, post) => pre + this.pathToResource(path) + post);
         html = html.replace(RegExp('(src=.)([^>]*\.js)([^>]*>)', 'g'),
-            (match, pre, path, post) => pre + this.pathToResource(doc_root, path) + post);
+            (match, pre, path, post) => pre + this.pathToResource(path) + post);
         html = html.replace(RegExp('(src=.)(.*\.png)([^>]*>)', 'g'),
-            (match, pre, path, post) => pre + this.pathToResource(doc_root, path) + post);
+            (match, pre, path, post) => pre + this.pathToResource(path) + post);
 
         html = html.replace('</html>',
             `<script>
   (function() {
     const vscode = acquireVsCodeApi();   
   
-    // $(document).ready(function(){
+    let inject = function(){
     if('${fragment}' !== 'undefined') {
-      let fragment = $('a[id=${fragment}]');
-      console.log(fragment);
-      $('html,body').animate({scrollTop: fragment.offset().top},'slow');
+        console.log('fragment: ${fragment}');
+      let id = $('a[id=${fragment}]');
+      if(id.offset() != null) {
+          console.log('id', id);
+        $('html,body').animate({scrollTop: id.offset().top},'slow');
+      } else {
+        let name = $('a[name=${fragment}]');
+        console.log('name', name);
+        if(name.offset() != null) {
+            $('html,body').animate({scrollTop: name.offset().top},'slow');
+        }
+      }
     }
     $('a').click(function() {   
         console.log($(this));
@@ -324,7 +328,9 @@ export class Doxygen {
         }
       }
     });
-//   });
+   };
+   inject();
+   $(document).ready(inject);
   }())
   </script>
   </html>`);
@@ -386,7 +392,7 @@ export class Doxygen {
         panel.webview.onDidReceiveMessage((ev) => {
             switch (ev.command) {
                 case "link":
-                    this.viewDoxygen(path.join(doc_root, ev.url));
+                    this.viewDoxygen(ev.url);
                     break;
                 case "history":
                     switch (ev.direction) {
