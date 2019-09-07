@@ -1,6 +1,6 @@
 # Generator for Doxygen documentation
 
-[![Licence](https://img.shields.io/github/license/betwo/vscode-doxygen-runner.svg)](https://github.com/betwo/vscode-doxygen-runner)
+[![Licence](https://img.shields.io/github/license/betwo/vscode-doxygen-runner)](https://github.com/betwo/vscode-doxygen-runner)
 [![VS Code Marketplace](https://vsmarketplacebadge.apphb.com/version-short/betwo.vscode-doxygen-runner.svg) ![Rating](https://vsmarketplacebadge.apphb.com/rating-short/betwo.vscode-doxygen-runner.svg) ![Downloads](https://vsmarketplacebadge.apphb.com/downloads-short/betwo.vscode-doxygen-runner.svg) ![Installs](https://vsmarketplacebadge.apphb.com/installs-short/betwo.vscode-doxygen-runner.svg)](https://marketplace.visualstudio.com/items?itemName=betwo.vscode-doxygen-runner)
 
 This extension adds helper functionality to generate Doxygen documentation
