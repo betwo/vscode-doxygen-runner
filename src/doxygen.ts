@@ -7,7 +7,7 @@ import * as fs from 'fs';
 export class Doxygen {
     public parseOutputTask: vscode.Task | undefined;
 
-    private active_panel: vscode.WebviewPanel | undefined;
+    private active_panel = new Map<string, vscode.WebviewPanel>();
     private project_name: string;
     private view_history: string[] = [];
     private view_future: string[] = [];
@@ -213,11 +213,12 @@ export class Doxygen {
             }
 
             // create a web view if we don't have one
-            if (this.active_panel === undefined) {
+            if (!this.active_panel.has(doc_root)) {
+                console.log("make view", doc_root);
                 this.createPanel(doc_root);
             }
 
-            this.active_panel.webview.html = this.injectHtml(content.toString(), doc_root, fragment);
+            this.active_panel.get(doc_root).webview.html = this.injectHtml(content.toString(), doc_root, fragment);
         });
     }
 
@@ -321,7 +322,7 @@ export class Doxygen {
     // create a new web view panel
     private createPanel(doc_root) {
         // Create and show a new webview
-        this.active_panel = vscode.window.createWebviewPanel(
+        let panel = vscode.window.createWebviewPanel(
             'doxygen',
             `Doxygen (${this.project_name})`,
             vscode.ViewColumn.Beside,
@@ -334,7 +335,7 @@ export class Doxygen {
             }
         );
 
-        this.active_panel.webview.onDidReceiveMessage((ev) => {
+        panel.webview.onDidReceiveMessage((ev) => {
             switch (ev.command) {
                 case "link":
                     this.viewDoxygen(path.join(doc_root, ev.url));
@@ -356,12 +357,14 @@ export class Doxygen {
             this.context.subscriptions
         );
 
-        this.active_panel.onDidDispose(
+        panel.onDidDispose(
             () => {
-                this.active_panel = undefined;
+                this.active_panel.delete(doc_root);
             },
             null,
             this.context.subscriptions
         );
+
+        this.active_panel.set(doc_root, panel)
     }
 };
