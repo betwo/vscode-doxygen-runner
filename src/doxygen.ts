@@ -17,7 +17,7 @@ export class Doxygen {
     constructor(public context: vscode.ExtensionContext,
         public basedir: string,
         public doxyfile: string) {
-    
+
         let cfg = utils.parseConfig(doxyfile);
         this.project_name = cfg['project_name'];
         this.output_directory = cfg['output_directory'];
@@ -34,15 +34,16 @@ export class Doxygen {
         }, async (progress, token) => {
             return this.runDoxygen().then((output: string) => {
                 output = output.replace(/`/g, '\\`');
-                parseOutputTask.execution = new vscode.ShellExecution(`echo "${output}"`);
+                if (output.length > 0) {
+                    parseOutputTask.execution = new vscode.ShellExecution(`echo "${output}"`);
 
-                vscode.tasks.executeTask(parseOutputTask).then(
-                    (task: vscode.TaskExecution) => {
-                        // display the generated documentation
-                        vscode.commands.executeCommand('extension.doxygen-runner.view_doxygen', this.basedir);
-                    },
-                    vscode.window.showErrorMessage
-                );
+                    vscode.tasks.executeTask(parseOutputTask).then(
+                        (task: vscode.TaskExecution) => {},
+                        vscode.window.showErrorMessage
+                    );
+                }
+                // display the generated documentation
+                vscode.commands.executeCommand('extension.doxygen-runner.view_doxygen', this.basedir);
             });
         }));
     }
