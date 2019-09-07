@@ -95,6 +95,25 @@
             "loop": true
           }
         ]
+      },
+      {
+        "name": "doxygen-tag-configuration",
+		"owner": "doxygen-runner",
+		"fileLocation": "absolute",
+        "pattern": [
+          {
+            "regexp": "^(warning|error):\\s+(.* at line (.*) of file `(.*)' (.*))$",
+            "severity": 1,
+			"message": 2,
+            "line": 3,
+            "file": 4
+          },
+          {
+            "regexp": "^(\\s+[^\\s].*)$",
+            "message": 1,
+            "loop": true
+          }
+        ]
       }
     ]
   },

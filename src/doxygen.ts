@@ -19,7 +19,10 @@ export class Doxygen {
         this.parseOutputTask = new vscode.Task(
             kind, 'Parse Doxygen documentation', 'extension.doxygen-runner.parse_doxygen_output',
             new vscode.ShellExecution('echo'),
-            ['$doxygen-runner', '$doxygen-runner-multiline']);
+            ['$doxygen-runner',
+                '$doxygen-runner-multiline',
+                '$doxygen-tag-configuration'
+            ]);
     }
 
     // generate the doxygen documentation for the project containing `filepath`
@@ -45,14 +48,13 @@ export class Doxygen {
 
         }, async (progress, token) => {
             this.parseConfig(doxyfile);
-            
-            return this.runDoxygen(basedir, doxyfile).then((output) => {
+
+            return this.runDoxygen(basedir, doxyfile).then((output: string) => {
+                output = output.replace(/`/g, '\\`');
                 this.parseOutputTask.execution = new vscode.ShellExecution(`echo "${output}"`);
-                
+
                 vscode.tasks.executeTask(this.parseOutputTask).then(
                     (task: vscode.TaskExecution) => {
-                        // progress.report({ increment: 100, message: `Done` });
-                        vscode.commands.executeCommand('extension.doxygen-runner.parse_doxygen_output');
                         // display the generated documentation
                         vscode.commands.executeCommand('extension.doxygen-runner.view_doxygen', basedir);
                     },
