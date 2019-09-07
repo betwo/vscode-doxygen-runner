@@ -216,8 +216,11 @@ export class Doxygen {
     }
 
     // convert a relative path to a vscode resource for the web view
-    private pathToResource(path: string) {
-        return vscode.Uri.file(path).with({ scheme: "vscode-resource" }).toString(true);
+    private pathToResource(doc_root: string, path: string) {
+        if(path.startsWith('http:') || path.startsWith('https:')) {
+            return path;
+        }
+        return vscode.Uri.file(`${doc_root}/${path}`).with({ scheme: "vscode-resource" }).toString(true);
     }
 
     // display one file of the documentation in a web view
@@ -272,28 +275,29 @@ export class Doxygen {
         html = html.replace('<head>', `<head>\n` +
             `<meta http-equiv="Content-Security-Policy" content="` +
             `img-src vscode-resource: https:; ` +
-            `script-src vscode-resource: https: 'unsafe-inline'; ` +
+            `script-src vscode-resource: http: https: 'unsafe-eval' 'unsafe-inline'; ` +
             `style-src vscode-resource: 'unsafe-inline';">`)
 
         html = html.replace(RegExp('(href=.)(.*\.css)([^>]*>)', 'g'),
-            (match, pre, path, post) => pre + this.pathToResource(`${doc_root}/${path}`) + post);
+            (match, pre, path, post) => pre + this.pathToResource(doc_root, path) + post);
         html = html.replace(RegExp('(src=.)([^>]*\.js)([^>]*>)', 'g'),
-            (match, pre, path, post) => pre + this.pathToResource(`${doc_root}/${path}`) + post);
+            (match, pre, path, post) => pre + this.pathToResource(doc_root, path) + post);
         html = html.replace(RegExp('(src=.)(.*\.png)([^>]*>)', 'g'),
-            (match, pre, path, post) => pre + this.pathToResource(`${doc_root}/${path}`) + post);
+            (match, pre, path, post) => pre + this.pathToResource(doc_root, path) + post);
 
         html = html.replace('</html>',
             `<script>
   (function() {
     const vscode = acquireVsCodeApi();   
   
-    $(document).ready(function(){
+    // $(document).ready(function(){
     if('${fragment}' !== 'undefined') {
       let fragment = $('a[id=${fragment}]');
       console.log(fragment);
       $('html,body').animate({scrollTop: fragment.offset().top},'slow');
     }
     $('a').click(function() {   
+        console.log($(this));
       vscode.postMessage({
         command: 'link',
         url: $(this).attr('href')
@@ -320,7 +324,7 @@ export class Doxygen {
         }
       }
     });
-  });
+//   });
   }())
   </script>
   </html>`);
