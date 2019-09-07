@@ -1,62 +1,45 @@
 import * as vscode from 'vscode';
 import * as child_process from 'child_process';
-import * as glob from 'fast-glob';
 import * as path from 'path';
 import * as fs from 'fs';
 
-export class Doxygen {
-    public parseOutputTask: vscode.Task | undefined;
+import { parseOutputTask } from './parse_output_task'
+import * as utils from './utils'
 
-    private active_panel = new Map<string, vscode.WebviewPanel>();
+export class Doxygen {
+    private active_panel: vscode.WebviewPanel;
     private project_name: string;
     private output_directory: string;
     private html_root_directory: string;
     private view_history: string[] = [];
     private view_future: string[] = [];
 
-    constructor(public context: vscode.ExtensionContext) {
-        let kind: vscode.TaskDefinition = {
-            'type': 'doxygen_runner'
-        };
-        this.parseOutputTask = new vscode.Task(
-            kind, 'Parse Doxygen documentation', 'extension.doxygen-runner.parse_doxygen_output',
-            new vscode.ShellExecution('echo'),
-            ['$doxygen-runner',
-                '$doxygen-runner-multiline',
-                '$doxygen-tag-configuration'
-            ]);
+    constructor(public context: vscode.ExtensionContext,
+        public basedir: string,
+        public doxyfile: string) {
+    
+        let cfg = utils.parseConfig(doxyfile);
+        this.project_name = cfg['project_name'];
+        this.output_directory = cfg['output_directory'];
+        this.html_root_directory = `${this.basedir}/${this.output_directory}/html`
     }
 
     // generate the doxygen documentation for the project containing `filepath`
     public generateDocumentation(filepath: string) {
-        if (!this.check()) {
-            return;
-        }
-
-        let tmp = this.findDoxyFile(filepath);
-        if (tmp === undefined) {
-            let config = vscode.workspace.getConfiguration('doxygen_runner');
-            let configuration_filenames = config['configuration_filenames'];
-            vscode.window.showErrorMessage(`No Doxygen configuration found (${configuration_filenames}).`);
-            return;
-        }
-        let doxyfile = tmp[1];
-        let basedir = tmp[0].toString();
-
         Promise.resolve(vscode.window.withProgress({
             location: vscode.ProgressLocation.Notification,
-            title: `Generating doxygen for ${doxyfile}`,
+            title: `Generating doxygen for ${this.doxyfile}`,
             cancellable: false,
 
         }, async (progress, token) => {
-            return this.runDoxygen(basedir, doxyfile).then((output: string) => {
+            return this.runDoxygen().then((output: string) => {
                 output = output.replace(/`/g, '\\`');
-                this.parseOutputTask.execution = new vscode.ShellExecution(`echo "${output}"`);
+                parseOutputTask.execution = new vscode.ShellExecution(`echo "${output}"`);
 
-                vscode.tasks.executeTask(this.parseOutputTask).then(
+                vscode.tasks.executeTask(parseOutputTask).then(
                     (task: vscode.TaskExecution) => {
                         // display the generated documentation
-                        vscode.commands.executeCommand('extension.doxygen-runner.view_doxygen', basedir);
+                        vscode.commands.executeCommand('extension.doxygen-runner.view_doxygen', this.basedir);
                     },
                     vscode.window.showErrorMessage
                 );
@@ -64,10 +47,10 @@ export class Doxygen {
         }));
     }
 
-    private runDoxygen(basedir, doxyfile) {
+    private runDoxygen() {
         // spawn a task to analyze the output of doxygen and match problems
         let options: child_process.ExecSyncOptionsWithStringEncoding = {
-            'cwd': basedir,
+            'cwd': this.basedir,
             'encoding': 'utf8'
         };
         // call doxygen in a subprocess
@@ -76,7 +59,7 @@ export class Doxygen {
 
         return new Promise(
             (resolve, reject) => {
-                child_process.exec(`${executable} ${doxyfile}  2>&1 1>/dev/null`, options,
+                child_process.exec(`${executable} ${this.doxyfile}  2>&1 1>/dev/null`, options,
                     (err, output) => {
                         if (err) {
                             console.log(`error: ${err}`);
@@ -91,126 +74,10 @@ export class Doxygen {
     }
 
     // display the index of the doxygen documentation for the project containing `filepath`
-    public viewIndex(filepath: string) {
-        if (!this.check()) {
-            return;
-        }
-
-        let tmp = this.findDoxyFile(filepath);
-        if (tmp === undefined) {
-            vscode.window.showErrorMessage("Cannot show Doxygen documentation, no opened files available.");
-            return;
-        }
-        let doc_directory = tmp[0].toString();
-        let doxyfile = tmp[1];
-
-        this.html_root_directory = `${doc_directory}/${this.output_directory}/html`
+    public viewIndex() {
         this.viewDoxygen('index.html');
     }
 
-    // check if everything is set up correctly
-    public check() {
-        try {
-            let config = vscode.workspace.getConfiguration('doxygen_runner');
-            let executable = config['doxygen_command'];
-            let output = child_process.execSync(`${executable} -v`);
-            console.log(output);
-            return true;
-        } catch (err) {
-            vscode.window.showErrorMessage("Doxygen is not installed or not correcly configured.");
-            return false;
-        }
-    }
-
-    // parse a Doxygen configuration file
-    private parseConfig(doxyfile: string) {
-        console.log(`Parsing ${doxyfile}`);
-        let lines = fs.readFileSync(doxyfile);
-        for (let row of lines.toString().split('\n')) {
-            {
-                let match = row.match(/^\s*PROJECT_NAME\s*=\s*"?([^"]*)"?\s*$/);
-                if (match) {
-                    this.project_name = match[1];
-                }
-            }
-            {
-                let match = row.match(/^\s*OUTPUT_DIRECTORY\s*=\s*"?([^"]*)"?\s*$/);
-                if (match) {
-                    let output_directory = match[1];
-                    if (output_directory.endsWith(path.sep)) {
-                        output_directory = output_directory.substr(0, output_directory.length - 1);
-                    }
-                    this.output_directory = output_directory;
-                }
-            }
-
-
-        }
-    }
-
-    // find a Doxygen configuration file for the project containing `filepath`
-    private findDoxyFile(filepath: string) {
-        if (filepath === undefined) {
-            filepath = this.getCurrentFileDir();
-            if (filepath === undefined) {
-                return undefined;
-            }
-        }
-
-        // load config file names
-        let config = vscode.workspace.getConfiguration('doxygen_runner');
-        let configuration_filenames = config['configuration_filenames'];
-
-        // go up until we find a unique Doxygen config
-        let config_file_dir = filepath;
-        let config_file = undefined;
-        while (config_file_dir != vscode.workspace.rootPath) {
-            let globs = configuration_filenames.map((name) => `${config_file_dir}/**/${name}`);
-            let doxyfiles = glob.sync(globs);
-            if (doxyfiles.length == 1) {
-                config_file = doxyfiles[0].toString();
-                break;
-            } else if (doxyfiles.length > 1) {
-                vscode.window.showWarningMessage(`Cannot determine unambiguous Doxyfile / doxygen.conf: ${doxyfiles}`);
-                return undefined;
-            }
-            config_file_dir = path.dirname(config_file_dir);
-        }
-
-        if (config_file !== undefined) {
-            // we found a config file, no we need to determine the base path, relative to which the output will be generated
-            this.parseConfig(config_file);
-
-            /*
-            Check if the configuration file is kept inside the output directory.
-            
-            Example 1:
-            doc/nested/Doxyfile 
-            and
-            OUTPUT_DIRECTORY = doc/nested
-            Then, we need to go up into the folder containing `doc/nested`
-            
-            Example 2:
-            doc/Doxyfile 
-            and
-            OUTPUT_DIRECTORY = doc/nested
-            Then, we need to go up into the folder containing `doc`
-            */
-
-            let output_dirs: string[] = this.output_directory.split(path.sep);
-            let base_dirs: string[] = config_file_dir.split(path.sep);
-            for (let subdir of output_dirs.reverse()) {
-                let last_dir = base_dirs[base_dirs.length - 1];
-                if (last_dir === subdir) {
-                    base_dirs.pop();
-                }
-            }
-            let base_dir = path.join(path.sep, ...base_dirs);
-            return [base_dir, config_file];
-        }
-
-        return undefined;
-    }
 
     // convert a relative path to a vscode resource for the web view
     private pathToResource(path: string) {
@@ -256,11 +123,11 @@ export class Doxygen {
             }
 
             // create a web view if we don't have one
-            if (!this.active_panel.has(this.html_root_directory)) {
-                this.createPanel(this.html_root_directory);
+            if (this.active_panel === undefined) {
+                this.createPanel();
             }
 
-            this.active_panel.get(this.html_root_directory).webview.html = this.injectHtml(content.toString(), fragment);
+            this.active_panel.webview.html = this.injectHtml(content.toString(), fragment);
         });
     }
 
@@ -363,18 +230,9 @@ export class Doxygen {
         this.viewDoxygen(next, false);
     }
 
-    // get the currently opened file or undefined
-    private getCurrentFileDir() {
-        if (vscode.window.activeTextEditor) {
-            let opened_file = vscode.window.activeTextEditor.document.fileName;
-            return path.dirname(opened_file);
-        }
-
-        return undefined;
-    }
 
     // create a new web view panel
-    private createPanel(doc_root) {
+    private createPanel() {
         // Create and show a new webview
         let panel = vscode.window.createWebviewPanel(
             'doxygen',
@@ -384,7 +242,7 @@ export class Doxygen {
                 enableScripts: true,
                 enableFindWidget: true,
                 localResourceRoots: [
-                    vscode.Uri.file(doc_root)
+                    vscode.Uri.file(this.html_root_directory)
                 ],
             }
         );
@@ -413,12 +271,12 @@ export class Doxygen {
 
         panel.onDidDispose(
             () => {
-                this.active_panel.delete(doc_root);
+                this.active_panel = undefined;
             },
             null,
             this.context.subscriptions
         );
 
-        this.active_panel.set(doc_root, panel)
+        this.active_panel = panel;
     }
 };
