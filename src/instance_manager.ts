@@ -1,11 +1,14 @@
 import * as vscode from 'vscode';
-import { Doxygen } from './doxygen'
-import * as utils from './utils'
+import { Doxygen } from './doxygen';
+import * as utils from './utils';
 
 export class InstanceManager {
     private instances = new Map<string, Doxygen>();
+    
+    private diagnostics: vscode.DiagnosticCollection;
 
-    constructor(public context: vscode.ExtensionContext) { }
+    constructor(public context: vscode.ExtensionContext) {
+    }
 
     public getInstance(filepath: string): Doxygen {
         if (!utils.check()) {
@@ -33,4 +36,4 @@ export class InstanceManager {
             return instance;
         }
     }
-};
+}

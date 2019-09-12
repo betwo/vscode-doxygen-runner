@@ -8,7 +8,8 @@ This extension adds helper functionality to generate Doxygen documentation
 ## Features
 
 * Find a `Doxyfile` relative to the currently open document and generate the documentation for it.
-* Displays the generated HTML pages inside VS code
+* Displays the generated HTML pages inside VS code.
+* Displays warnings and errors with squiggles.
 
 ## Setup / Configuration
 

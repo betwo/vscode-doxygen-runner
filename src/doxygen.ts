@@ -3,8 +3,8 @@ import * as child_process from 'child_process';
 import * as path from 'path';
 import * as fs from 'fs';
 
-import { parseOutputTask } from './parse_output_task'
-import * as utils from './utils'
+import * as utils from './utils';
+import * as problem_matcher from './problem_matcher';
 
 export class Doxygen {
     private active_panel: vscode.WebviewPanel;
@@ -13,6 +13,7 @@ export class Doxygen {
     private html_root_directory: string;
     private view_history: string[] = [];
     private view_future: string[] = [];
+    private diagnostics: vscode.DiagnosticCollection;
 
     constructor(public context: vscode.ExtensionContext,
         public basedir: string,
@@ -21,7 +22,9 @@ export class Doxygen {
         let cfg = utils.parseConfig(doxyfile);
         this.project_name = cfg['project_name'];
         this.output_directory = cfg['output_directory'];
-        this.html_root_directory = `${this.basedir}/${this.output_directory}/html`
+        this.html_root_directory = `${this.basedir}/${this.output_directory}/html`;
+        this.diagnostics = vscode.languages.createDiagnosticCollection(`doxygen_runner:${this.html_root_directory})`);
+
     }
 
     // generate the doxygen documentation for the project containing `filepath`
@@ -33,14 +36,9 @@ export class Doxygen {
 
         }, async (progress, token) => {
             return this.runDoxygen().then((output: string) => {
-                output = output.replace(/`/g, '\\`');
-                if (output.length > 0) {
-                    parseOutputTask.execution = new vscode.ShellExecution(`echo "${output}"`);
-
-                    vscode.tasks.executeTask(parseOutputTask).then(
-                        (task: vscode.TaskExecution) => {},
-                        vscode.window.showErrorMessage
-                    );
+                this.diagnostics.clear();
+                if (output.length > 0 || true) {
+                    problem_matcher.analyze(output.split('\n'), this.doxyfile, this.diagnostics);
                 }
                 // display the generated documentation
                 vscode.commands.executeCommand('extension.doxygen-runner.view_doxygen', this.basedir);
@@ -49,7 +47,6 @@ export class Doxygen {
     }
 
     private runDoxygen() {
-        // spawn a task to analyze the output of doxygen and match problems
         let options: child_process.ExecSyncOptionsWithStringEncoding = {
             'cwd': this.basedir,
             'encoding': 'utf8'
@@ -90,7 +87,9 @@ export class Doxygen {
 
     // display one file of the documentation in a web view
     private viewDoxygen(uri: string, purge_future_stack: boolean = true) {
-        if (uri === undefined) return;
+        if (uri === undefined) {
+            return;
+        }
 
         // split the url into the file and the remaining fragment
         let html_file: string;
@@ -139,7 +138,7 @@ export class Doxygen {
             `<meta http-equiv="Content-Security-Policy" content="` +
             `img-src vscode-resource: https:; ` +
             `script-src vscode-resource: http: https: 'unsafe-eval' 'unsafe-inline'; ` +
-            `style-src vscode-resource: 'unsafe-inline';">`)
+            `style-src vscode-resource: 'unsafe-inline';">`);
 
         html = html.replace(RegExp('(href=.)(.*\.css)([^>]*>)', 'g'),
             (match, pre, path, post) => pre + this.pathToResource(path) + post);
@@ -224,7 +223,7 @@ export class Doxygen {
     }
 
     private historyForward() {
-        if (this.view_future.length == 0) {
+        if (this.view_future.length === 0) {
             return;
         }
         let next = this.view_future.pop();
@@ -280,4 +279,4 @@ export class Doxygen {
 
         this.active_panel = panel;
     }
-};
+}
