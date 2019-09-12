@@ -7,3 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [1.0.0] - 2019-09-07
 ### Added
 - Added a task to find Doxyfiles and generate Doxygen documentation
+
+## [1.3.0] - 2019-09-12
+### Changed
+- Replaced the dummy task for error pargsing with DiagnosticCollection
