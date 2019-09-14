@@ -11,3 +11,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [1.3.0] - 2019-09-12
 ### Changed
 - Replaced the dummy task for error pargsing with DiagnosticCollection
+
+## [1.4.0] - 2019-09-14
+### Changed
+- Changed path handling for support on Windows
+- Refresh the web view when regenerating the documentation
+- Display doxygen output for better UX with large projects
