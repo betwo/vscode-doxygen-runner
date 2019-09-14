@@ -106,6 +106,7 @@ export class Doxygen {
             this.viewIndex();
         } else {
             this.reloadPage();
+            this.active_panel.reveal();
         }
     }
 
