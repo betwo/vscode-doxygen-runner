@@ -18,6 +18,22 @@ export function analyzeTag(log: string[],
     doxyfile: string,
     diagnostics_collection: Map<string, vscode.Diagnostic[]>) {
     for (let line = 0; line < log.length; ++line) {
+        let no_matching_file = /^(.*):(\d+):\s+(warning|error):\s+(no .* found for .*)$/.exec(log[line]);
+        if (no_matching_file !== null) {
+            let message: string = no_matching_file[4];
+            let start = new vscode.Position(parseInt(no_matching_file[2]) - 1, 0);
+            let end = new vscode.Position(parseInt(no_matching_file[2]) - 1, 1000);
+            const diagnostic = new vscode.Diagnostic(new vscode.Range(start, end), message, stringToSeverity(no_matching_file[3]));
+            diagnostic.source = no_matching_file[1];
+
+            line += 1;
+            diagnostic.message += log[line];
+
+            line = parseContinuedDiagnostic(log, line, diagnostic);
+            updateDiagnosticDatabase(diagnostics_collection, diagnostic);
+            continue;
+        }
+
         let docu_match = /^(.*):(\d+):\s+(warning|error):\s+(.*)$/.exec(log[line]);
         if (docu_match !== null) {
             let message: string = docu_match[4];
@@ -80,7 +96,7 @@ function updateDiagnosticDatabase(diagnostics_collection: Map<string, vscode.Dia
 
 function parseContinuedDiagnostic(log: string[], line: number, diagnostic: vscode.Diagnostic) {
     while (line + 1 < log.length) {
-        let multiline = /^(\s+.*)$/.exec(log[line + 1]);
+        let multiline = /^(\s+.*|Possible candidates:.*)$/.exec(log[line + 1]);
         if (multiline === null) {
             break;
         }
