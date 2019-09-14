@@ -27,7 +27,7 @@ export function analyzeTag(log: string[],
             diagnostic.source = docu_match[1];
 
             line = parseContinuedDiagnostic(log, line, diagnostic);
-            updateDiagnosticDatabase(diagnostics_collection, doxyfile, diagnostic);
+            updateDiagnosticDatabase(diagnostics_collection, diagnostic);
             continue;
         }
 
@@ -40,7 +40,7 @@ export function analyzeTag(log: string[],
             diagnostic.source = config_line_match[4];
 
             line = parseContinuedDiagnostic(log, line, diagnostic);
-            updateDiagnosticDatabase(diagnostics_collection, doxyfile, diagnostic);
+            updateDiagnosticDatabase(diagnostics_collection, diagnostic);
             continue;
         }
 
@@ -51,7 +51,7 @@ export function analyzeTag(log: string[],
             diagnostic.source = doxyfile;
 
             line = parseContinuedDiagnostic(log, line, diagnostic);
-            updateDiagnosticDatabase(diagnostics_collection, doxyfile, diagnostic);
+            updateDiagnosticDatabase(diagnostics_collection, diagnostic);
             continue;
         }
 
@@ -61,13 +61,14 @@ export function analyzeTag(log: string[],
         diagnostic.source = doxyfile;
 
         line = parseContinuedDiagnostic(log, line, diagnostic);
-        updateDiagnosticDatabase(diagnostics_collection, doxyfile, diagnostic);
+        updateDiagnosticDatabase(diagnostics_collection, diagnostic);
     }
 }
 
 function updateDiagnosticDatabase(diagnostics_collection: Map<string, vscode.Diagnostic[]>,
-    key: string, diagnostic: vscode.Diagnostic) {
+    diagnostic: vscode.Diagnostic) {
 
+    let key = diagnostic.source;
     if (!diagnostics_collection.has(key)) {
         diagnostics_collection.set(key, [diagnostic]);
 
