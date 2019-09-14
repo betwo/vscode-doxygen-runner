@@ -17,3 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Changed path handling for support on Windows
 - Refresh the web view when regenerating the documentation
 - Display doxygen output for better UX with large projects
+
+## [1.4.1] - 2019-09-14
+### Changed
+- Change to use the multi root workspace API
