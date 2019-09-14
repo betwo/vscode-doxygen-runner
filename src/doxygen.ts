@@ -21,8 +21,8 @@ export class Doxygen {
 
         let cfg = utils.parseConfig(doxyfile);
         this.project_name = cfg['project_name'];
-        this.output_directory = cfg['output_directory'];
-        this.html_root_directory = `${this.basedir}/${this.output_directory}/html`;
+        this.output_directory = utils.readPath(cfg['output_directory']);
+        this.html_root_directory = path.join(this.basedir, this.output_directory, 'html');
         this.diagnostics = vscode.languages.createDiagnosticCollection(`doxygen_runner:${this.html_root_directory})`);
 
     }
@@ -47,17 +47,19 @@ export class Doxygen {
     }
 
     private runDoxygen() {
-        let options: child_process.ExecSyncOptionsWithStringEncoding = {
-            'cwd': this.basedir,
-            'encoding': 'utf8'
+        let options: child_process.ExecFileOptionsWithStringEncoding = {
+            cwd: this.basedir,
+            encoding: 'utf8',
+            maxBuffer: 1024*1024*1024
         };
         // call doxygen in a subprocess
         let config = vscode.workspace.getConfiguration('doxygen_runner');
         let executable = config['doxygen_command'];
+        let args = [this.doxyfile];
 
         return new Promise(
             (resolve, reject) => {
-                child_process.exec(`${executable} ${this.doxyfile}  2>&1 1>/dev/null`, options,
+                child_process.execFile(executable, args, options,
                     (err, output) => {
                         if (err) {
                             console.log(`error: ${err}`);

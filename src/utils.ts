@@ -24,8 +24,7 @@ export function check() {
         console.log(`Doxygen version: ${output}`);
         return true;
     } catch (err) {
-        vscode.window.showErrorMessage("Doxygen is not installed or not correcly configured.");
-        return false;
+        throw Error(`Doxygen is not installed or not correcly configured.\Command '${executable} ${args.join(' ')}' failed with '${err.message}'.`);
     }
 }
 
@@ -56,6 +55,11 @@ export function parseConfig(doxyfile) {
     return cfg;
 }
 
+export function readPath(raw: string): string
+{
+    return path.normalize(raw.replace(/[\/\\\s]+$/gi, ""));
+}
+
 // find a Doxygen configuration file for the project containing `filepath`
 export function findDoxyFile(filepath: string) {
     if (filepath === undefined) {
@@ -72,11 +76,11 @@ export function findDoxyFile(filepath: string) {
     // go up until we find a unique Doxygen config
     let config_file_dir = filepath;
     let config_file = undefined;
-    while (config_file_dir != vscode.workspace.rootPath) {
+    while (config_file_dir !== vscode.workspace.rootPath) {
         let globs = configuration_filenames.map((name) => `${config_file_dir}/**/${name}`);
         let doxyfiles = glob.sync(globs);
-        if (doxyfiles.length == 1) {
-            config_file = doxyfiles[0].toString();
+        if (doxyfiles.length === 1) {
+            config_file = path.normalize(doxyfiles[0].toString());
             break;
         } else if (doxyfiles.length > 1) {
             vscode.window.showWarningMessage(`Cannot determine unambiguous Doxyfile / doxygen.conf: ${doxyfiles}`);
@@ -105,7 +109,7 @@ export function findDoxyFile(filepath: string) {
         Then, we need to go up into the folder containing `doc`
         */
 
-        let output_dirs: string[] = cfg['output_directory'].split(path.sep);
+        let output_dirs: string[] = readPath(cfg['output_directory']).split(path.sep);
         let base_dirs: string[] = config_file_dir.split(path.sep);
         for (let subdir of output_dirs.reverse()) {
             let last_dir = base_dirs[base_dirs.length - 1];
@@ -113,7 +117,14 @@ export function findDoxyFile(filepath: string) {
                 base_dirs.pop();
             }
         }
-        let base_dir = path.join(path.sep, ...base_dirs);
+
+        let base_dir: string;
+        if(config_file_dir.startsWith('/')) {
+            // Absolute unix path, this means the result should also be absolute
+            base_dir = path.normalize(path.join(path.sep, ...base_dirs));
+        } else {
+            base_dir = path.normalize(path.join(...base_dirs));
+        }
         return [base_dir, config_file];
     }
 

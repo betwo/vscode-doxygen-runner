@@ -6,7 +6,7 @@ export function analyze(log: string[],
     diagnostics_collection: vscode.DiagnosticCollection) {
 
     let diags = new Map<string, vscode.Diagnostic[]>();
-    analyzeTag(log, doxyfile, diags);
+    analyzeTag(log.filter((x) => x.trim() !== ''), doxyfile, diags);
 
     for (let it of diags.entries()) {
         let uri = vscode.Uri.file(it[0]);
