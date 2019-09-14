@@ -31,14 +31,14 @@ export class Doxygen {
     public generateDocumentation(filepath: string) {
         Promise.resolve(vscode.window.withProgress({
             location: vscode.ProgressLocation.Notification,
-            title: `Generating doxygen for ${this.doxyfile}`,
+            title: `Doxygen`,
             cancellable: false,
 
         }, async (progress, token) => {
-            return this.runDoxygen().then((output: string) => {
+            return this.runDoxygen(progress, token).then(([stdout, stderr]) => {
                 this.diagnostics.clear();
-                if (output.length > 0 || true) {
-                    problem_matcher.analyze(output.split('\n'), this.doxyfile, this.diagnostics);
+                if (stderr.length > 0 || true) {
+                    problem_matcher.analyze(stderr.replace(/\r/gi, '').split('\n'), this.doxyfile, this.diagnostics);
                 }
                 // display the generated documentation
                 vscode.commands.executeCommand('extension.doxygen-runner.view_doxygen', this.basedir);
@@ -46,11 +46,13 @@ export class Doxygen {
         }));
     }
 
-    private runDoxygen() {
+    private runDoxygen(progress: vscode.Progress<{ message?: string; increment?: number; }>,
+        token: vscode.CancellationToken): Promise<string[]> {
+
         let options: child_process.ExecFileOptionsWithStringEncoding = {
             cwd: this.basedir,
             encoding: 'utf8',
-            maxBuffer: 1024*1024*1024
+            maxBuffer: 1024 * 1024 * 1024
         };
         // call doxygen in a subprocess
         let config = vscode.workspace.getConfiguration('doxygen_runner');
@@ -59,8 +61,8 @@ export class Doxygen {
 
         return new Promise(
             (resolve, reject) => {
-                child_process.execFile(executable, args, options,
-                    (err, output) => {
+                let child = child_process.execFile(executable, args, options,
+                    (err, std_out, std_err) => {
                         if (err) {
                             console.log(`error: ${err}`);
                             vscode.window.showErrorMessage(err.message);
@@ -68,8 +70,33 @@ export class Doxygen {
                             return;
                         }
 
-                        resolve(output);
+                        resolve([std_out, std_err]);
                     });
+                token.onCancellationRequested(() => {
+                    child.kill();
+                });
+
+                let buffer = '';
+                let last_update = Date.now();
+                child.stdout.on('data', (data) => {
+                    buffer += data.toString().replace(/\r/gi, '');
+
+                    // split the data into lines
+                    let lines = buffer.split('\n');
+                    // assume that the last line is incomplete, add it back to the buffer
+                    buffer = lines[lines.length - 1];
+
+                    // log the complete lines
+                    for (let lineno = 0; lineno < lines.length - 1; ++lineno) {
+                        console.log(lines[lineno]);
+                    }
+                    // if enough time has passed (1 second), update the progress
+                    let now = Date.now();
+                    if (now - last_update > 1000) {
+                        progress.report({ message: lines[lines.length - 2], increment: 0 });
+                        last_update = now;
+                    }
+                });
             });
     }
 
