@@ -24,7 +24,7 @@ export function activate(context: vscode.ExtensionContext) {
     vscode.commands.registerCommand('extension.doxygen-runner.view_doxygen', (filepath) => {
       try {
         let instance: Doxygen = instance_manager.getInstance(filepath);
-        instance.viewIndex();
+        instance.updateView();
 
       } catch(err) {
         vscode.window.showErrorMessage(`Error while viewing Documentation.\n${err.message}`);

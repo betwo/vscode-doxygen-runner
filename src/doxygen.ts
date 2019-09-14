@@ -100,6 +100,15 @@ export class Doxygen {
             });
     }
 
+    // display the doxygen configuration
+    public updateView() {
+        if (this.active_panel === undefined) {
+            this.viewIndex();
+        } else {
+            this.reloadPage();
+        }
+    }
+
     // display the index of the doxygen documentation for the project containing `filepath`
     public viewIndex() {
         this.viewDoxygen('index.html');
@@ -231,6 +240,11 @@ export class Doxygen {
   </html>`);
 
         return html;
+    }
+
+    private reloadPage() {
+        let current = this.view_history.pop();
+        this.viewDoxygen(current, false);
     }
 
     private historyBack() {
