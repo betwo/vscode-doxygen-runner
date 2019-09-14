@@ -16,6 +16,9 @@
   "categories": [
     "Other"
   ],
+  "keywords": [
+    "multi-root ready"
+  ],
   "activationEvents": [
     "*"
   ],

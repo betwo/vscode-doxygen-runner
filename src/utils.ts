@@ -76,7 +76,8 @@ export function findDoxyFile(filepath: string) {
     // go up until we find a unique Doxygen config
     let config_file_dir = filepath;
     let config_file = undefined;
-    while (config_file_dir !== vscode.workspace.rootPath) {
+    let workspace = vscode.workspace.getWorkspaceFolder(vscode.Uri.file(filepath));
+    while (config_file_dir !== workspace.uri.fsPath) {
         let globs = configuration_filenames.map((name) => `${config_file_dir}/**/${name}`);
         let doxyfiles = glob.sync(globs);
         if (doxyfiles.length === 1) {
