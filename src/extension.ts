@@ -10,14 +10,25 @@ export function activate(context: vscode.ExtensionContext) {
 
   context.subscriptions.push(
     vscode.commands.registerCommand('extension.doxygen-runner.generate_doxygen', (filepath) => {
-      let instance: Doxygen = instance_manager.getInstance(filepath);
-      instance.generateDocumentation(filepath);
+      try {
+        let instance: Doxygen = instance_manager.getInstance(filepath);
+        instance.generateDocumentation(filepath);
+
+      } catch(err) {
+        vscode.window.showErrorMessage(`Error while generating Documentation.\n${err.message}`);
+      }
+
     })
   );
   context.subscriptions.push(
     vscode.commands.registerCommand('extension.doxygen-runner.view_doxygen', (filepath) => {
-      let instance: Doxygen = instance_manager.getInstance(filepath);
-      instance.viewIndex();
+      try {
+        let instance: Doxygen = instance_manager.getInstance(filepath);
+        instance.viewIndex();
+
+      } catch(err) {
+        vscode.window.showErrorMessage(`Error while viewing Documentation.\n${err.message}`);
+      }
     })
   );
 }

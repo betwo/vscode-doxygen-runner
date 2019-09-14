@@ -16,11 +16,12 @@ export function getCurrentFileDir() {
 
 // check if everything is set up correctly
 export function check() {
+    let config = vscode.workspace.getConfiguration('doxygen_runner');
+    let executable = config['doxygen_command'];
+    let args = ['-v'];
     try {
-        let config = vscode.workspace.getConfiguration('doxygen_runner');
-        let executable = config['doxygen_command'];
-        let output = child_process.execSync(`${executable} -v`);
-        console.log(output);
+        let output = child_process.execFileSync(executable, args);
+        console.log(`Doxygen version: ${output}`);
         return true;
     } catch (err) {
         vscode.window.showErrorMessage("Doxygen is not installed or not correcly configured.");

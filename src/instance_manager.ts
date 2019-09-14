@@ -21,8 +21,7 @@ export class InstanceManager {
 
         let tmp = utils.findDoxyFile(filepath);
         if (tmp === undefined) {
-            vscode.window.showErrorMessage("Cannot show Doxygen documentation, no opened files available.");
-            return;
+            throw Error(`Cannot find Doxyfile for ${filepath}.`);
         }
 
         let basedir = tmp[0];

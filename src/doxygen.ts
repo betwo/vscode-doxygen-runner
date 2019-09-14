@@ -118,8 +118,7 @@ export class Doxygen {
         let abs_html_file = path.join(this.html_root_directory, html_file);
         fs.readFile(abs_html_file, (error, content) => {
             if (error) {
-                vscode.window.showErrorMessage(error.message);
-                return;
+                throw Error(error.message);
             }
 
             // create a web view if we don't have one
