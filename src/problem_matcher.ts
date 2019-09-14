@@ -26,26 +26,12 @@ export function analyzeTag(log: string[],
             const diagnostic = new vscode.Diagnostic(new vscode.Range(start, end), message, stringToSeverity(docu_match[3]));
             diagnostic.source = docu_match[1];
 
-            while (line + 1 < log.length) {
-                let multiline = /^(\s+.*)$/.exec(log[line + 1]);
-                if (multiline === null) {
-                    break;
-                }
-                diagnostic.message += '\n' + multiline[1];
-                line++;
-            }
-
-            if (!diagnostics_collection.has(diagnostic.source)) {
-                diagnostics_collection.set(diagnostic.source, [diagnostic]);
-
-            } else {
-                const diagnostics: vscode.Diagnostic[] = diagnostics_collection.get(diagnostic.source);
-                diagnostics.push(diagnostic);
-            }
+            line = parseContinuedDiagnostic(log, line, diagnostic);
+            updateDiagnosticDatabase(diagnostics_collection, doxyfile, diagnostic);
             continue;
         }
 
-        let config_line_match = /^(warning|error):\s*(.* at line (.*) of file `(.*)' .*)$/.exec(log[line]);
+        let config_line_match = /^(warning|error):\s*(.* at line (.*) of file [`'"](.*)[`'"].*)$/.exec(log[line]);
         if (config_line_match !== null) {
             let message: string = config_line_match[2];
             let start = new vscode.Position(parseInt(config_line_match[3]) - 1, 0);
@@ -53,22 +39,8 @@ export function analyzeTag(log: string[],
             const diagnostic = new vscode.Diagnostic(new vscode.Range(start, end), message, stringToSeverity(config_line_match[1]));
             diagnostic.source = config_line_match[4];
 
-            while (line + 1 < log.length) {
-                let multiline = /^(\s+.*)$/.exec(log[line + 1]);
-                if (multiline === null) {
-                    break;
-                }
-                diagnostic.message += '\n' + multiline[1];
-                line++;
-            }
-
-            if (!diagnostics_collection.has(doxyfile)) {
-                diagnostics_collection.set(doxyfile, [diagnostic]);
-
-            } else {
-                const diagnostics: vscode.Diagnostic[] = diagnostics_collection.get(doxyfile);
-                diagnostics.push(diagnostic);
-            }
+            line = parseContinuedDiagnostic(log, line, diagnostic);
+            updateDiagnosticDatabase(diagnostics_collection, doxyfile, diagnostic);
             continue;
         }
 
@@ -78,25 +50,44 @@ export function analyzeTag(log: string[],
             const diagnostic = new vscode.Diagnostic(new vscode.Range(0, 0, 0, 0), message, stringToSeverity(config_no_line_match[1]));
             diagnostic.source = doxyfile;
 
-            while (line + 1 < log.length) {
-                let multiline = /^(\s+.*)$/.exec(log[line + 1]);
-                if (multiline === null) {
-                    break;
-                }
-                diagnostic.message += '\n' + multiline[1];
-                line++;
-            }
-
-            if (!diagnostics_collection.has(doxyfile)) {
-                diagnostics_collection.set(doxyfile, [diagnostic]);
-
-            } else {
-                const diagnostics: vscode.Diagnostic[] = diagnostics_collection.get(doxyfile);
-                diagnostics.push(diagnostic);
-            }
+            line = parseContinuedDiagnostic(log, line, diagnostic);
+            updateDiagnosticDatabase(diagnostics_collection, doxyfile, diagnostic);
             continue;
         }
+
+        // no match, so threat this as an unknown warning
+        let message: string = `Unknown warning/error: ${log[line]}`;
+        const diagnostic = new vscode.Diagnostic(new vscode.Range(0, 0, 0, 0), message, vscode.DiagnosticSeverity.Information);
+        diagnostic.source = doxyfile;
+
+        line = parseContinuedDiagnostic(log, line, diagnostic);
+        updateDiagnosticDatabase(diagnostics_collection, doxyfile, diagnostic);
     }
+}
+
+function updateDiagnosticDatabase(diagnostics_collection: Map<string, vscode.Diagnostic[]>,
+    key: string, diagnostic: vscode.Diagnostic) {
+
+    if (!diagnostics_collection.has(key)) {
+        diagnostics_collection.set(key, [diagnostic]);
+
+    } else {
+        const diagnostics: vscode.Diagnostic[] = diagnostics_collection.get(key);
+        diagnostics.push(diagnostic);
+    }
+}
+
+function parseContinuedDiagnostic(log: string[], line: number, diagnostic: vscode.Diagnostic) {
+    while (line + 1 < log.length) {
+        let multiline = /^(\s+.*)$/.exec(log[line + 1]);
+        if (multiline === null) {
+            break;
+        }
+        diagnostic.message += '\n' + multiline[1];
+        line++;
+    }
+
+    return line;
 }
 
 function stringToSeverity(str: string): vscode.DiagnosticSeverity {
