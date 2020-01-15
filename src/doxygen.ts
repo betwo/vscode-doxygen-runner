@@ -165,12 +165,12 @@ export class Doxygen {
                 this.createPanel();
             }
 
-            this.active_panel.webview.html = this.injectHtml(content.toString(), fragment);
+            this.active_panel.webview.html = this.injectHtml(content.toString(), fragment, uri);
         });
     }
 
     // modify the html code of the doxygen documenation to work within a web view
-    private injectHtml(html: string, fragment: string) {
+    private injectHtml(html: string, fragment: string, uri: string) {
 
         html = html.replace('<head>', `<head>\n` +
             `<meta http-equiv="Content-Security-Policy" content="` +
@@ -188,8 +188,8 @@ export class Doxygen {
         html = html.replace('</html>',
             `<script>
   (function() {
-    const vscode = acquireVsCodeApi();   
-  
+    const vscode = acquireVsCodeApi();
+
     let inject = function(){
     if('${fragment}' !== 'undefined') {
         console.log('fragment: ${fragment}');
@@ -205,14 +205,19 @@ export class Doxygen {
         }
       }
     }
-    $('a').click(function() {   
-        console.log($(this));
+    $('a:not(.external)').click(function() {
       vscode.postMessage({
         command: 'link',
         url: $(this).attr('href')
       });
     });
-    $('area').click(function() {   
+    $('a.external').click(function() {
+      vscode.postMessage({
+        command: 'external_link',
+        url: $(this).attr('href')
+      });
+    });
+    $('area').click(function() {
       vscode.postMessage({
         command: 'link',
         url: $(this).attr('href')
@@ -240,6 +245,8 @@ export class Doxygen {
   </script>
   </html>`);
 
+        html = html.replace('</body>', `<p><small>This page has been modified in order to work inside of Virtual Studio Code.
+        <a class="external" href="file://${this.html_root_directory}/${uri}">Click here</a> to see the documentation in the browser.</small></p></body>`)
         return html;
     }
 
@@ -292,6 +299,9 @@ export class Doxygen {
 
         panel.webview.onDidReceiveMessage((ev) => {
             switch (ev.command) {
+                case "external_link":
+                    vscode.env.openExternal(vscode.Uri.parse(ev.url));
+                    break;
                 case "link":
                     this.viewDoxygen(ev.url);
                     break;
