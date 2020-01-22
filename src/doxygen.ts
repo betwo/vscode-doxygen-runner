@@ -137,14 +137,17 @@ export class Doxygen {
         if (anchor_idx >= 0) {
             html_file = uri.substr(0, anchor_idx);
             fragment = uri.substr(anchor_idx + 1);
+            console.log(`Showing page ${html_file} [${fragment}] extracted from anchor ${uri}`);
         } else {
             html_file = uri;
             fragment = undefined;
+            console.log(`Showing page ${html_file} extracted from url ${uri}`);
         }
 
         if (fragment !== undefined && html_file === "") {
             // in-page anchor link
             html_file = this.view_history.pop();
+            console.log(`Showing page ${html_file} [${fragment}] extracted from history`);
         }
 
         // update history
@@ -162,9 +165,11 @@ export class Doxygen {
 
             // create a web view if we don't have one
             if (this.active_panel === undefined) {
+                console.log("creating panel");
                 this.createPanel();
             }
 
+            console.log("setting html");
             this.active_panel.webview.html = this.injectHtml(content.toString(), fragment, uri);
         });
     }
@@ -239,8 +244,8 @@ export class Doxygen {
       }
     });
    };
-   inject();
    $(document).ready(inject);
+   inject();
   }())
   </script>
   </html>`);
