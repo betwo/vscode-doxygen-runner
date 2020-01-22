@@ -21,3 +21,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [1.4.1] - 2019-09-14
 ### Changed
 - Change to use the multi root workspace API
+  
+## [1.5.1] - 2020-01-22
+### Fixed
+- Issue #1: Clearing cache in case an already processed Doxyfile is renamed
