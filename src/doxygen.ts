@@ -251,7 +251,7 @@ export class Doxygen {
   </html>`);
 
         html = html.replace('</body>', `<p><small>This page has been modified in order to work inside of Virtual Studio Code.
-        <a class="external" href="file://${this.html_root_directory}/${uri}">Click here</a> to see the documentation in the browser.</small></p></body>`)
+        <a class="external" href="file://${this.html_root_directory}/${uri}">Click here</a> to see the documentation in the browser.</small></p></body>`);
         return html;
     }
 

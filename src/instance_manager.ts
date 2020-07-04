@@ -26,9 +26,9 @@ export class InstanceManager {
         if (this.instances.has(basedir)) {
             let instance = this.instances.get(basedir);
             if (instance.doxyfile === doxyfile) {
-                return instance
+                return instance;
             } else {
-                console.log(`Doxyfile in ${basedir} was changed from ${instance.doxyfile} to ${doxyfile}`)
+                console.log(`Doxyfile in ${basedir} was changed from ${instance.doxyfile} to ${doxyfile}`);
                 return this.makeInstance(basedir, doxyfile);
             }
         } else {
