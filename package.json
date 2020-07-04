@@ -49,7 +49,12 @@
               "Doxyfile",
               "doxygen.conf"
             ],
-            "description": "Regular expression(s) to check a CMakeLists.txt file for (possible) GTest targets"
+            "description": "File names that are accepted as Doxygen configurations during crawling"
+          },
+          "doxygen_runner.configuration_file_override": {
+            "type": "string",
+            "default": "",
+            "description": "If set, disable crawling the workspace for Doxygen configuration and use this path. \n You can use ${workspaceFolder} here. The variable will be replaced with all folders added to this workspace. \n (In case there are multiple matches, an error will be shown.)"
           }
         }
       }
