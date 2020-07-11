@@ -29,3 +29,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [1.6.0] - 2020-07-04
 ### Added
 - Allow users to explicitly set the Doxygen configuration file instead of crawling for it
+
+## [1.7.0] - 2020-07-11
+### Added
+- Allow the specification of package marker files to stop crawling for configuration files in package root directories
