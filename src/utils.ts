@@ -61,13 +61,6 @@ export function readPath(raw: string): string {
 
 // find a Doxygen configuration file for the project containing `filepath`
 export function findDoxyFile(filepath: string) {
-    if (filepath === undefined) {
-        filepath = getCurrentFileDir();
-        if (filepath === undefined) {
-            return undefined;
-        }
-    }
-
     let config = vscode.workspace.getConfiguration('doxygen_runner');
     let config_file: string;
     let config_file_dir: string;
@@ -90,12 +83,17 @@ export function findDoxyFile(filepath: string) {
         config_file_dir = path.dirname(config_file);
 
     } else {
+        if (filepath === undefined) {
+            filepath = getCurrentFileDir();
+            if (filepath === undefined) {
+                return undefined;
+            }
+        }
         // load config file names
         let configuration_filenames = config['configuration_filenames'];
 
         // go up until we find a unique Doxygen config
-        let config_file_dir = filepath;
-        let config_file = undefined;
+        config_file_dir = filepath;
         let workspace = vscode.workspace.getWorkspaceFolder(vscode.Uri.file(filepath));
         while (config_file_dir !== workspace.uri.fsPath) {
             let globs = configuration_filenames.map((name) => `${config_file_dir}/**/${name}`);
