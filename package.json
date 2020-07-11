@@ -51,6 +51,18 @@
             ],
             "description": "File names that are accepted as Doxygen configurations during crawling"
           },
+          "doxygen_runner.crawler_package_root_marker_files": {
+            "type": "array",
+            "default": [
+              "package.xml",
+              "package.json",
+              "manifest.xml",
+              "manifest.json",
+              "MANIFEST",
+              "MANIFEST.in"
+            ],
+            "description": "File names that mark the root of a package, above which the search for a Doxyfile is not continued."
+          },
           "doxygen_runner.configuration_file_override": {
             "type": "string",
             "default": "",

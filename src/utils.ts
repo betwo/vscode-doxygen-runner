@@ -92,6 +92,12 @@ export function findDoxyFile(filepath: string) {
         // load config file names
         let configuration_filenames = config['configuration_filenames'];
 
+        // load package markers
+        let package_markers = config['crawler_package_root_marker_files'];
+        if (package_markers === undefined) {
+            package_markers = [];
+        }
+
         // go up until we find a unique Doxygen config
         config_file_dir = filepath;
         let workspace = vscode.workspace.getWorkspaceFolder(vscode.Uri.file(filepath));
@@ -105,6 +111,13 @@ export function findDoxyFile(filepath: string) {
                 vscode.window.showWarningMessage(`Cannot determine unambiguous Doxyfile / doxygen.conf: ${doxyfiles}`);
                 return undefined;
             }
+
+            let existing_package_markers = package_markers.filter((filename) => {
+                return fs.existsSync(`${config_file_dir}/${filename}`);
+            });
+            if (existing_package_markers.length !== 0) {
+                throw Error(`Package in '${config_file_dir}' does not contain a Doxyfile.`);
+            }
             config_file_dir = path.dirname(config_file_dir);
         }
     }
@@ -115,15 +128,15 @@ export function findDoxyFile(filepath: string) {
 
         /*
         Check if the configuration file is kept inside the output directory.
-        
+
         Example 1:
-        doc/nested/Doxyfile 
+        doc/nested/Doxyfile
         and
         OUTPUT_DIRECTORY = doc/nested
         Then, we need to go up into the folder containing `doc/nested`
-        
+
         Example 2:
-        doc/Doxyfile 
+        doc/Doxyfile
         and
         OUTPUT_DIRECTORY = doc/nested
         Then, we need to go up into the folder containing `doc`
