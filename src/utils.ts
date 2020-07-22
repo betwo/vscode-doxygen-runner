@@ -101,6 +101,9 @@ export function findDoxyFile(filepath: string) {
         // go up until we find a unique Doxygen config
         config_file_dir = filepath;
         let workspace = vscode.workspace.getWorkspaceFolder(vscode.Uri.file(filepath));
+        if (workspace === undefined) {
+            throw Error(`Path '${filepath}' is not part of the workspace.`);
+        }
         while (config_file_dir !== workspace.uri.fsPath) {
             let globs = configuration_filenames.map((name) => `${config_file_dir}/**/${name}`);
             let doxyfiles = glob.sync(globs);
@@ -125,7 +128,10 @@ export function findDoxyFile(filepath: string) {
     if (config_file !== undefined) {
         // we found a config file, no we need to determine the base path, relative to which the output will be generated
         let cfg = parseConfig(config_file);
-
+        let output_dir = cfg['output_directory'];
+        if (path.isAbsolute(output_dir)) {
+            return [output_dir, config_file];
+        }
         /*
         Check if the configuration file is kept inside the output directory.
 
@@ -142,7 +148,7 @@ export function findDoxyFile(filepath: string) {
         Then, we need to go up into the folder containing `doc`
         */
 
-        let output_dirs: string[] = readPath(cfg['output_directory']).split(path.sep);
+        let output_dirs: string[] = readPath(output_dir).split(path.sep);
         let base_dirs: string[] = config_file_dir.split(path.sep);
         for (let subdir of output_dirs.reverse()) {
             let last_dir = base_dirs[base_dirs.length - 1];

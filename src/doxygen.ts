@@ -22,7 +22,11 @@ export class Doxygen {
         let cfg = utils.parseConfig(doxyfile);
         this.project_name = cfg['project_name'];
         this.output_directory = utils.readPath(cfg['output_directory']);
-        this.html_root_directory = path.join(this.basedir, this.output_directory, 'html');
+        if(path.isAbsolute(this.output_directory)) {
+            this.html_root_directory = path.join(this.output_directory, 'html');    
+        } else {
+            this.html_root_directory = path.join(this.basedir, this.output_directory, 'html');
+        }
         this.diagnostics = vscode.languages.createDiagnosticCollection(`doxygen_runner:${this.html_root_directory})`);
 
     }
