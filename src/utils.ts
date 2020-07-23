@@ -51,6 +51,13 @@ export function parseConfig(doxyfile) {
                 cfg['output_directory'] = output_directory;
             }
         }
+        {
+            let match = row.match(/^\s*INPUT\s*=\s*"?([^"]*)"?\s*$/);
+            if (match) {
+                let input = match[1].split(/\s+/);
+                cfg['input_directories'] = input;
+            }
+        }
     }
     return cfg;
 }
@@ -126,12 +133,28 @@ export function findDoxyFile(filepath: string) {
     }
 
     if (config_file !== undefined) {
-        // we found a config file, no we need to determine the base path, relative to which the output will be generated
+        // we found a config file, now we need to determine the base path, relative to which the output will be generated
         let cfg = parseConfig(config_file);
         let output_dir = cfg['output_directory'];
-        if (path.isAbsolute(output_dir)) {
-            return [output_dir, config_file];
+
+        // first we search upward in the file tree until we find the "INPUT" directories specified in the doxyfile
+        let input_directories = cfg['input_directories'].filter((filepath) => !filepath.startsWith("."));
+        if (input_directories.length > 0) {
+            let parent_dir = path.dirname(config_file);
+            while (!containsInputDirectories(parent_dir, input_directories)) {
+                let parent = path.dirname(parent_dir);
+                if (parent === parent_dir) {
+                    console.log(`Could not find an existing directory containing the INPUT directories`);
+                    break;
+                }
+                parent_dir = parent;
+            }
+            if (containsInputDirectories(parent_dir, input_directories)) {
+                return [parent_dir, config_file];
+            }
         }
+
+        // input directories could not be determined, try to match the OUTPUT_DIRECTORY
         /*
         Check if the configuration file is kept inside the output directory.
 
@@ -164,8 +187,26 @@ export function findDoxyFile(filepath: string) {
         } else {
             base_dir = path.normalize(path.join(...base_dirs));
         }
+
+        if (!containsInputDirectories(base_dir, input_directories)) {
+            vscode.window.showWarningMessage("Possible configuration problem in your Doxyfile: " +
+                `Not all input directories could be found relative to ${base_dir}`);
+        }
+
         return [base_dir, config_file];
     }
 
     return undefined;
+}
+
+function containsInputDirectories(parent_dir, input_directories) {
+    if (!fs.existsSync(parent_dir)) {
+        return false;
+    }
+    for (let input of input_directories) {
+        if (!fs.existsSync(path.join(parent_dir, input))) {
+            return false;
+        }
+    }
+    return true;
 }
