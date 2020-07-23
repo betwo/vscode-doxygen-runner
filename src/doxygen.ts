@@ -22,8 +22,8 @@ export class Doxygen {
         let cfg = utils.parseConfig(doxyfile);
         this.project_name = cfg['project_name'];
         this.output_directory = utils.readPath(cfg['output_directory']);
-        if(path.isAbsolute(this.output_directory)) {
-            this.html_root_directory = path.join(this.output_directory, 'html');    
+        if (path.isAbsolute(this.output_directory)) {
+            this.html_root_directory = path.join(this.output_directory, 'html');
         } else {
             this.html_root_directory = path.join(this.basedir, this.output_directory, 'html');
         }
@@ -41,9 +41,7 @@ export class Doxygen {
         }, async (progress, token) => {
             return this.runDoxygen(progress, token).then(([stdout, stderr]) => {
                 this.diagnostics.clear();
-                if (stderr.length > 0 || true) {
-                    problem_matcher.analyze(stderr.replace(/\r/gi, '').split('\n'), this.doxyfile, this.diagnostics);
-                }
+                problem_matcher.analyze(stderr.replace(/\r/gi, '').split('\n'), this.doxyfile, this.diagnostics);
                 // display the generated documentation
                 vscode.commands.executeCommand('extension.doxygen-runner.view_doxygen', this.basedir);
             });
@@ -65,6 +63,7 @@ export class Doxygen {
 
         return new Promise(
             (resolve, reject) => {
+                console.log(`Running ${executable} in directory ${this.basedir}`);
                 let child = child_process.execFile(executable, args, options,
                     (err, std_out, std_err) => {
                         if (err) {
