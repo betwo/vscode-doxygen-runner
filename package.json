@@ -11,7 +11,7 @@
     "url": "https://github.com/betwo/vscode-doxygen-runner"
   },
   "engines": {
-    "vscode": "^1.32.0"
+    "vscode": "^1.61.0"
   },
   "categories": [
     "Other"
@@ -76,23 +76,23 @@
     "vscode:prepublish": "webpack --mode production",
     "compile": "tsc -p ./",
     "watch": "tsc -watch -p ./",
-    "postinstall": "node ./node_modules/vscode/bin/install",
     "test": "npm run compile && node ./node_modules/vscode/bin/test",
     "webpack": "webpack --mode development",
     "webpack-dev": "webpack --mode development --watch",
     "test-compile": "tsc -p ./"
   },
   "devDependencies": {
-    "@types/node": "^8.10.59",
+    "@types/node": "^17.0.0",
+    "@types/vscode": "^1.61.0",
     "ts-loader": "^6.2.1",
     "typescript": "^3.7.4",
-    "vscode": "^1.1.36",
-    "webpack": "^4.41.5",
-    "webpack-cli": "^3.3.10"
+    "vscode": "^0.9.9",
+    "webpack": "^5.53.0",
+    "webpack-cli": "^4.8.0"
   },
   "dependencies": {
-    "fast-glob": "^2.2.7",
-    "child_process": "^1.0.2"
+    "child_process": "^1.0.2",
+    "fast-glob": "^3.2.7"
   },
   "extensionDependencies": []
 }

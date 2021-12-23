@@ -1,5 +1,4 @@
 import * as vscode from 'vscode';
-import { print } from 'util';
 
 export function analyze(log: string[],
     doxyfile: string,
