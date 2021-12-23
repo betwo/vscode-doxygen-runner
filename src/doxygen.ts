@@ -109,7 +109,9 @@ export class Doxygen {
             this.viewIndex();
         } else {
             this.reloadPage();
-            this.active_panel.reveal();
+            if(this.active_panel.visible !== true) {
+                this.active_panel.reveal();
+            }
         }
     }
 
