@@ -67,6 +67,11 @@
             "type": "string",
             "default": "",
             "description": "If set, disable crawling the workspace for Doxygen configuration and use this path. \n You can use ${workspaceFolder} here. The variable will be replaced with all folders added to this workspace. \n (In case there are multiple matches, an error will be shown.)"
+          },
+          "doxygen_runner.view_after_generate": {
+            "type": "boolean",
+            "default": true,
+            "description": "Whether the Generate Doxygen documentation command will automatically run View Doxygen documentation"
           }
         }
       }

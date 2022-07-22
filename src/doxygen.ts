@@ -43,7 +43,10 @@ export class Doxygen {
                 this.diagnostics.clear();
                 problem_matcher.analyze(stderr.replace(/\r/gi, '').split('\n'), this.doxyfile, this.diagnostics);
                 // display the generated documentation
-                vscode.commands.executeCommand('extension.doxygen-runner.view_doxygen', this.basedir);
+                let config = vscode.workspace.getConfiguration('doxygen_runner');
+                if (config['view_after_generate']) {
+                    vscode.commands.executeCommand('extension.doxygen-runner.view_doxygen', this.basedir);
+                }
             });
         }));
     }
