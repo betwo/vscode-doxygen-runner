@@ -75,11 +75,15 @@ The default is
 ],
 ```
 
+#### Option `doxygen_runner.view_after_generate`
+
+Specifies whether the `View Doxygen documentation` command should be executed automatically after `Generate Doxygen documentation`.
+
 ## Usage: Commands
 
 There are the following commands:
 
-* `Generate Doxygen documentation`: This (re-)generates the Doxygen output when run. Afterwards it will automatically run `View Doxygen documentation`.
+* `Generate Doxygen documentation`: This (re-)generates the Doxygen output when run. Afterwards it will automatically run `View Doxygen documentation` if `doxygen_runner.view_after_generate` is `true`.
 * `View Doxygen documentation`: This will show a preview of the generated documentation in a new panel.
 
 ## Usage: Crawling mode
