@@ -13,12 +13,12 @@
 			"args": [
 				"--disable-extensions",
 				"--extensionDevelopmentPath=${workspaceFolder}",
+				"--no-sandbox"
 			],
 			"outFiles": [
 				"${workspaceFolder}/dist/**/*.js"
 			],
-			"preLaunchTask": "npm: webpack",
-			"stopOnEntry": false
+			"preLaunchTask": "npm: webpack"
 		}
 	]
 }
