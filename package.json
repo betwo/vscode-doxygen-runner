@@ -20,7 +20,9 @@
     "multi-root ready"
   ],
   "activationEvents": [
-    "*"
+    "onCommand:extension.doxygen-runner.generate_doxygen",
+    "onCommand:extension.doxygen-runner.view_doxygen",
+    "onWebviewPanel:doxygen"
   ],
   "main": "./dist/extension",
   "contributes": {
