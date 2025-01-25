@@ -129,7 +129,7 @@ export class Doxygen {
         if (path.startsWith('http:') || path.startsWith('https:')) {
             return path;
         }
-        return vscode.Uri.file(`${this.html_root_directory}/${path}`).with({ scheme: "vscode-resource" }).toString(true);
+        return this.active_panel.webview.asWebviewUri(vscode.Uri.joinPath(vscode.Uri.file(this.html_root_directory), path));
     }
 
     // display one file of the documentation in a web view
@@ -187,15 +187,17 @@ export class Doxygen {
 
         html = html.replace('<head>', `<head>\n` +
             `<meta http-equiv="Content-Security-Policy" content="` +
+            `default-src 'none';` +
             `img-src vscode-resource: https:; ` +
             `script-src vscode-resource: http: https: 'unsafe-eval' 'unsafe-inline'; ` +
-            `style-src vscode-resource: 'unsafe-inline';">`);
+            `style-src vscode-resource: 'unsafe-inline';` +
+            `">`);
 
-        html = html.replace(RegExp('(href=.)(.*\.css)([^>]*>)', 'g'),
+        html = html.replace(RegExp('(href=.)(.*\\.css)([^>]*>)', 'g'),
             (match, pre, path, post) => pre + this.pathToResource(path) + post);
-        html = html.replace(RegExp('(src=.)([^>]*\.js)([^>]*>)', 'g'),
+        html = html.replace(RegExp('(src=.)([^>]*\\.js)([^>]*>)', 'g'),
             (match, pre, path, post) => pre + this.pathToResource(path) + post);
-        html = html.replace(RegExp('(src=.)(.*\.png)([^>]*>)', 'g'),
+        html = html.replace(RegExp('(src=.)(.*\\.(?:png|svg|gif))([^>]*>)', 'g'),
             (match, pre, path, post) => pre + this.pathToResource(path) + post);
 
         html = html.replace('</html>',
