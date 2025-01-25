@@ -123,6 +123,10 @@ export class Doxygen {
         this.viewDoxygen('index.html');
     }
 
+    // get the path to the generated index file
+    public getIndexHtmlPath() {
+        return vscode.Uri.joinPath(vscode.Uri.file(this.html_root_directory), "index.html");
+    }
 
     // convert a relative path to a vscode resource for the web view
     private pathToResource(path: string) {

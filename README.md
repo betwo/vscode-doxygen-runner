@@ -22,16 +22,17 @@ It can generate and preview the documentation and help you fix warnings by line-
 
 The following settings can be modified via your `settings.json` file or in the GUI:
 
-#### Option `doxygen_runner.doxygen_command`
+### Option `doxygen_runner.doxygen_command`
 
 Specifies (as an absolute path) where the `doxygen` executable is installed in the system.
 
-#### Option `doxygen_runner.configuration_file_override`
+### Option `doxygen_runner.configuration_file_override`
 
 Although this extension is designed to function in workspaces with multiple packages and Doxygen configurations,
 you can force a specific file to be used to generate the documentation.
 
 By setting `doxygen_runner.configuration_file_override` in your settings, e.g. in your workspace's `settings.json` file:
+
 ```json
 {
     ...
@@ -39,14 +40,16 @@ By setting `doxygen_runner.configuration_file_override` in your settings, e.g. i
     ...
 }
 ```
+
 the search for Doxygen configuration files is disabled and this file is always used.
 
-#### Option `doxygen_runner.configuration_filenames`
+### Option `doxygen_runner.configuration_filenames`
 
 Specifies (as an array), how your Doxygen configuration files are named. This is only required, if you do not override `doxygen_runner.configuration_file_override`.
 If your project uses another naming scheme, overwrite this in your settings.
 
 The default is
+
 ```json
 [
   "Doxyfile",
@@ -54,7 +57,7 @@ The default is
 ],
 ```
 
-#### Option `doxygen_runner.crawler_package_root_marker_files`
+### Option `doxygen_runner.crawler_package_root_marker_files`
 
 The search for a Doxygen configuration file is stopped, once the root of a package is reached. This is determined by checking for the existence of *manifest* files.
 
@@ -64,6 +67,7 @@ If your project uses other manifiest files, overwrite this in your settings.
 Note: This option can be empty, then the search will only terminate once the workspace root directory is reached.
 
 The default is
+
 ```json
 [
   "package.xml",
@@ -75,9 +79,13 @@ The default is
 ],
 ```
 
-#### Option `doxygen_runner.view_after_generate`
+### Option `doxygen_runner.view_after_generate`
 
 Specifies whether the `View Doxygen documentation` command should be executed automatically after `Generate Doxygen documentation`.
+
+### Option `doxygen_runner.view_in_live_preview`
+
+Specifies whether the `View Doxygen documentation` will open the generated documentation using the [Live Preview](https://marketplace.visualstudio.com/items?itemName=ms-vscode.live-server) extension. If this extension is not installed, the command will revert the the default viewer.
 
 ## Usage: Commands
 
@@ -94,7 +102,7 @@ The search starts at the currently opened file's directory and will advance to t
 
 ### Example 1: Assume the following directory structure
 
-```
+```ascii
 * root
 |
 +---+ package_name
@@ -115,7 +123,7 @@ If any of the files `Doxyfile`, `some_file.txt`, `package.json` is opened, the f
 
 ### Example 2: Assume the following directory structure
 
-```
+```ascii
 * root
 |
 +---+ package1
@@ -147,7 +155,6 @@ If any of the files `Doxyfile`, `some_file.txt`, `package.json` is opened, the f
 If any of the files `package1/documentation/Doxyfile`, `some_file1.txt`, `package1.json` is opened, the file  `package1/documentation/Doxyfile` will be used for generating the documentation.
 
 Else, if any of the files `package2/documentation/Doxyfile`, `some_file2.txt`, `package2.json` is opened, the file  `package2/documentation/Doxyfile` will be used for generating the documentation.
-
 
 ## Usage: Manual Configuration Override
 

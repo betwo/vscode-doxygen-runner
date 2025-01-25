@@ -74,6 +74,11 @@
             "type": "boolean",
             "default": true,
             "description": "Whether the Generate Doxygen documentation command will automatically run View Doxygen documentation"
+          },
+          "doxygen_runner.view_in_live_preview": {
+            "type": "boolean",
+            "default": false,
+            "description": "Whether to use `Live Preview` to open the generated documentation (when installed)"
           }
         }
       }
