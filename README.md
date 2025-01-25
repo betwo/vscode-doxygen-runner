@@ -1,7 +1,7 @@
 # Generator for Doxygen documentation
 
 [![Licence](https://img.shields.io/github/license/betwo/vscode-doxygen-runner)](https://github.com/betwo/vscode-doxygen-runner)
-[![VS Code Marketplace](https://vsmarketplacebadges.dev/version-short/betwo.vscode-doxygen-runner.svg) ![Rating](https://vsmarketplacebadges.dev/rating-short/betwo.vscode-doxygen-runner.svg) ![Downloads](https://vsmarketplacebadges.dev/downloads-short/betwo.vscode-doxygen-runner.svg) ![Installs](https://vsmarketplacebadges.dev/installs-short/betwo.vscode-doxygen-runner.svg)](https://marketplace.visualstudio.com/items?itemName=betwo.vscode-doxygen-runner)
+[![VS Code Marketplace](https://vsmarketplacebadges.dev/version-short/betwo.vscode-doxygen-runner.png) ![Rating](https://vsmarketplacebadges.dev/rating-short/betwo.vscode-doxygen-runner.png) ![Downloads](https://vsmarketplacebadges.dev/downloads-short/betwo.vscode-doxygen-runner.png) ![Installs](https://vsmarketplacebadges.dev/installs-short/betwo.vscode-doxygen-runner.png)](https://marketplace.visualstudio.com/items?itemName=betwo.vscode-doxygen-runner)
 
 This extension adds helper functionality to work with Doxygen documentation.
 It can generate and preview the documentation and help you fix warnings by line-matching error messages.
