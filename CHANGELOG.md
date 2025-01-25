@@ -33,3 +33,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [1.7.0] - 2020-07-11
 ### Added
 - Allow the specification of package marker files to stop crawling for configuration files in package root directories
+
+## [1.9.0] - 2025-01-25
+### Added
+- Allow specfying to open the generated html files with Live Preview with `view_in_live_preview`
+
+### Fixed
+- Fixed WebView URI wrapping not handling local files correctly anymore
