@@ -133,7 +133,9 @@ export class Doxygen {
         if (path.startsWith('http:') || path.startsWith('https:')) {
             return path;
         }
-        return this.active_panel.webview.asWebviewUri(vscode.Uri.joinPath(vscode.Uri.file(this.html_root_directory), path));
+        const res = this.active_panel.webview.asWebviewUri(vscode.Uri.joinPath(vscode.Uri.file(this.html_root_directory), path));
+        console.log(`Mapping path ${path} to resource ${res}`);
+        return res;
     }
 
     // display one file of the documentation in a web view
@@ -192,9 +194,9 @@ export class Doxygen {
         html = html.replace('<head>', `<head>\n` +
             `<meta http-equiv="Content-Security-Policy" content="` +
             `default-src 'none';` +
-            `img-src vscode-resource: https:; ` +
-            `script-src vscode-resource: http: https: 'unsafe-eval' 'unsafe-inline'; ` +
-            `style-src vscode-resource: 'unsafe-inline';` +
+            `img-src ${this.active_panel.webview.cspSource} https:; ` +
+            `script-src ${this.active_panel.webview.cspSource} http: https: 'unsafe-eval' 'unsafe-inline'; ` +
+            `style-src ${this.active_panel.webview.cspSource} 'unsafe-inline';` +
             `">`);
 
         html = html.replace(RegExp('(href=.)(.*\\.css)([^>]*>)', 'g'),
@@ -208,7 +210,7 @@ export class Doxygen {
             `<script>
   (function() {
     const vscode = acquireVsCodeApi();
-
+    let injected = false;
     let inject = function(){
     if('${fragment}' !== 'undefined') {
         console.log('fragment: ${fragment}');
@@ -224,43 +226,75 @@ export class Doxygen {
         }
       }
     }
-    $('a:not(.external)').click(function() {
+    $('a:not(.external)').off().click(function() {
       vscode.postMessage({
         command: 'link',
         url: $(this).attr('href')
       });
     });
-    $('a.external').click(function() {
+    $('a.external').off().click(function() {
       vscode.postMessage({
         command: 'external_link',
         url: $(this).attr('href')
       });
     });
-    $('area').click(function() {
+    $('area').off().click(function() {
       vscode.postMessage({
         command: 'link',
         url: $(this).attr('href')
       });
     });
-    $(window).bind('keydown', function(e) {
-      if(event.getModifierState("Alt")) {
-          if(e.key === 'ArrowLeft') {
-            vscode.postMessage({
-                command: 'history',
-                direction: 'back'
-            });
-        } else if(e.key === 'ArrowRight') {
-            vscode.postMessage({
-                command: 'history',
-                direction: 'forward'
-            });
+    if(!injected){
+      $(window).bind('keydown', function(e) {
+        if(event.getModifierState("Alt")) {
+            if(e.key === 'ArrowLeft') {
+              vscode.postMessage({
+                  command: 'history',
+                  direction: 'back'
+              });
+          } else if(e.key === 'ArrowRight') {
+              vscode.postMessage({
+                  command: 'history',
+                  direction: 'forward'
+              });
+          }
         }
-      }
-    });
+      });
+      console.log("observe mutation");
+      const observer = new MutationObserver(() => {
+        console.log("mutation");
+        inject();
+      });
+      observer.observe(document.getElementById('side-nav'), {
+        childList: true,
+        subtree: true
+      });
+    }
+    injected = true;
    };
    $(document).ready(inject);
-   inject();
   }())
+
+    showSyncOff = function(n,relpath)
+    {
+        n.html('<img src="${this.pathToResource("sync_off.png")}" title="'+SYNCOFFMSG+'"/>');
+    }
+
+    showSyncOn = function(n,relpath)
+    {
+        n.html('<img src="${this.pathToResource("sync_on.png")}" title="'+SYNCONMSG+'"/>');
+    }
+
+    getScript = function(scriptName,func,show)
+    {
+        var head = document.getElementsByTagName("head")[0];
+        var script = document.createElement('script');
+        script.id = scriptName;
+        script.type = 'text/javascript';
+        script.onload = func;
+        script.src = 'https://file+.vscode-resource.vscode-cdn.net${this.html_root_directory}/'+scriptName+'.js';
+        head.appendChild(script);
+    }
   </script>
   </html>`);
 
@@ -310,6 +344,7 @@ export class Doxygen {
             {
                 enableScripts: true,
                 enableFindWidget: true,
+                enableForms: true,
                 localResourceRoots: [
                     vscode.Uri.file(this.html_root_directory)
                 ],
