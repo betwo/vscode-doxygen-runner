@@ -40,3 +40,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - Fixed WebView URI wrapping not handling local files correctly anymore
+
+## [1.10.0] - 2025-02-01
+### Added
+- Added support for side navigation bar rendering
