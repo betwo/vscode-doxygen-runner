@@ -14,6 +14,9 @@ export class Doxygen {
     private view_history: string[] = [];
     private view_future: string[] = [];
     private diagnostics: vscode.DiagnosticCollection;
+    private navtree_patched_path: string;
+    private menu_patched_path: string;
+    private storage_path: string;
 
     constructor(public context: vscode.ExtensionContext,
         public basedir: string,
@@ -29,6 +32,13 @@ export class Doxygen {
         }
         this.diagnostics = vscode.languages.createDiagnosticCollection(`doxygen_runner:${this.html_root_directory})`);
 
+        this.storage_path = this.context.storageUri.fsPath;
+        fs.mkdir(this.storage_path, { recursive: true }, (err) => {
+            if (err !== null) {
+                console.error("cannot use vscode extension storage");
+                this.storage_path = this.context.extensionPath;
+            }
+        });
     }
 
     // generate the doxygen documentation for the project containing `filepath`
@@ -133,9 +143,18 @@ export class Doxygen {
         if (path.startsWith('http:') || path.startsWith('https:')) {
             return path;
         }
-        const res = this.active_panel.webview.asWebviewUri(vscode.Uri.joinPath(vscode.Uri.file(this.html_root_directory), path));
-        console.log(`Mapping path ${path} to resource ${res}`);
-        return res;
+
+        if(path === "navtree.js") {
+            // special handling for patching navtree resources
+            return this.active_panel.webview.asWebviewUri(vscode.Uri.file(this.navtree_patched_path));
+        } else if(path === "menu.js") {
+            // special handling for patching menu resources
+            return this.active_panel.webview.asWebviewUri(vscode.Uri.file(this.menu_patched_path));
+        } else {
+            const res = this.active_panel.webview.asWebviewUri(vscode.Uri.joinPath(vscode.Uri.file(this.html_root_directory), path));
+            console.log(`Mapping path ${path} to resource ${res}`);
+            return res;
+        }
     }
 
     // display one file of the documentation in a web view
@@ -170,6 +189,10 @@ export class Doxygen {
             this.view_future = [];
         }
 
+        // patch navtree
+        this.patchNavtreeFile();
+        this.patchMenuFile();
+
         // read the file contents, adjust them and display them
         let abs_html_file = path.join(this.html_root_directory, html_file);
         fs.readFile(abs_html_file, (error, content) => {
@@ -186,6 +209,44 @@ export class Doxygen {
             console.log("setting html");
             this.active_panel.webview.html = this.injectHtml(content.toString(), fragment, uri);
         });
+    }
+
+    private patchNavtreeFile() {
+        let absfile = path.join(this.html_root_directory, "navtree.js");
+        if (fs.existsSync(absfile)) {
+            fs.readFile(absfile, (error, content) => {
+                if (error) {
+                    throw Error(error.message);
+                }
+
+                const url_prefix = `https://file+.vscode-resource.vscode-cdn.net${this.html_root_directory}`;
+                let patched_content = content.toString();
+                patched_content = patched_content.replace('script.src = scriptName', `script.src = '${url_prefix}/' + scriptName`);
+                patched_content = patched_content.replace(`"'+relpath+'sync_off.png`, `"${url_prefix}/sync_off.png`);
+                patched_content = patched_content.replace(`"'+relpath+'sync_on.png`, `"${url_prefix}/sync_on.png`);
+
+                this.navtree_patched_path = path.join(this.context.storageUri.fsPath, `navtree-patched.js`);
+                fs.writeFileSync(this.navtree_patched_path, patched_content);
+            });
+        }
+    }
+
+    private patchMenuFile() {
+        let absfile = path.join(this.html_root_directory, "menu.js");
+        if (fs.existsSync(absfile)) {
+            fs.readFile(absfile, (error, content) => {
+                if (error) {
+                    throw Error(error.message);
+                }
+
+                const url_prefix = `https://file+.vscode-resource.vscode-cdn.net${this.html_root_directory}`;
+                let patched_content = content.toString();
+                patched_content = patched_content.replace(`src="'+relPath+`, `src="${url_prefix}/'+`);
+
+                this.menu_patched_path = path.join(this.context.storageUri.path, `menu-patched.js`);
+                fs.writeFileSync(this.menu_patched_path, patched_content);
+            });
+        }
     }
 
     // modify the html code of the doxygen documenation to work within a web view
@@ -275,26 +336,6 @@ export class Doxygen {
    $(document).ready(inject);
   }())
 
-    showSyncOff = function(n,relpath)
-    {
-        n.html('<img src="${this.pathToResource("sync_off.png")}" title="'+SYNCOFFMSG+'"/>');
-    }
-
-    showSyncOn = function(n,relpath)
-    {
-        n.html('<img src="${this.pathToResource("sync_on.png")}" title="'+SYNCONMSG+'"/>');
-    }
-
-    getScript = function(scriptName,func,show)
-    {
-        var head = document.getElementsByTagName("head")[0];
-        var script = document.createElement('script');
-        script.id = scriptName;
-        script.type = 'text/javascript';
-        script.onload = func;
-        script.src = 'https://file+.vscode-resource.vscode-cdn.net${this.html_root_directory}/'+scriptName+'.js';
-        head.appendChild(script);
-    }
   </script>
   </html>`);
 
@@ -346,6 +387,7 @@ export class Doxygen {
                 enableFindWidget: true,
                 enableForms: true,
                 localResourceRoots: [
+                    vscode.Uri.file(this.context.storageUri.fsPath),
                     vscode.Uri.file(this.html_root_directory)
                 ],
             }
