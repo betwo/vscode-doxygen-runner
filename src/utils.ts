@@ -111,7 +111,7 @@ export function findDoxyFile(filepath: string) {
         if (workspace === undefined) {
             throw Error(`Path '${filepath}' is not part of the workspace.`);
         }
-        while (config_file_dir !== workspace.uri.fsPath) {
+        while (true) {
             let globs = configuration_filenames.map((name) => `${config_file_dir}/**/${name}`);
             let doxyfiles = glob.sync(globs);
             if (doxyfiles.length === 1) {
@@ -129,6 +129,10 @@ export function findDoxyFile(filepath: string) {
                 throw Error(`Package in '${config_file_dir}' does not contain a Doxyfile.`);
             }
             config_file_dir = path.dirname(config_file_dir);
+            if(config_file_dir === workspace.uri.fsPath) {
+                // stop crawling at the workspace boundary
+                break;
+            }
         }
     }
 
