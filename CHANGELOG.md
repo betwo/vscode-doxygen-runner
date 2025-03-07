@@ -48,3 +48,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [1.11.0] - 2025-03-08
 ### Fixed
 - Reworked file patching to work with multiple doxygen versions. Tested with 1.9.1 and 1.13.2.
+
+## [1.11.1] - 2025-03-08
+### Fixed
+- Fixed crawling stopping when hitting the workspace root, resulting in not finding top-level Doxyfiles
