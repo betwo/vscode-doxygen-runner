@@ -44,3 +44,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [1.10.0] - 2025-02-01
 ### Added
 - Added support for side navigation bar rendering
+
+## [1.11.0] - 2025-03-08
+### Fixed
+- Reworked file patching to work with multiple doxygen versions. Tested with 1.9.1 and 1.13.2.
