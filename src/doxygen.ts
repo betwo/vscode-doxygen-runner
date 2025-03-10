@@ -210,6 +210,16 @@ export class Doxygen {
             this.active_panel.webview.html = this.injectHtml(content.toString(), fragment, uri);
         });
     }
+    
+    private sanitizePath(path: string) {
+        if(path.startsWith("/")) {
+            // assume unix-like path
+            return path;
+        } else {
+            // assume Windows path
+            return "/" + path.replace(/\\/g,'/');
+        }
+    }
 
     private patchNavtreeFile() {
         let absfile = path.join(this.html_root_directory, "navtree.js");
@@ -219,7 +229,8 @@ export class Doxygen {
                     throw Error(error.message);
                 }
 
-                const url_prefix = `https://file+.vscode-resource.vscode-cdn.net${this.html_root_directory}`;
+                const url_prefix = `https://file+.vscode-resource.vscode-cdn.net${this.sanitizePath(this.html_root_directory)}`;
+
                 let patched_content = content.toString();
                 patched_content = patched_content.replace('script.src = scriptName', `script.src = '${url_prefix}/' + scriptName`);
                 patched_content = patched_content.replace(`"'+relpath+'sync_off.png`, `"${url_prefix}/sync_off.png`);

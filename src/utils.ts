@@ -111,9 +111,13 @@ export function findDoxyFile(filepath: string) {
         if (workspace === undefined) {
             throw Error(`Path '${filepath}' is not part of the workspace.`);
         }
-        while (config_file_dir !== workspace.uri.fsPath) {
-            let globs = configuration_filenames.map((name) => `${config_file_dir}/**/${name}`);
-            let doxyfiles = glob.sync(globs);
+        while (true) {
+            // glob does not work properly with Windows paths. See https://stackoverflow.com/questions/72313482/glob-paths-dont-work-in-my-windows-environment
+            // fix: replace Windows path separator with Unix-like path separator.
+            const glob_safe_dir = config_file_dir.replace(/\\/g,'/');
+
+            const globs = configuration_filenames.map((name) => `${glob_safe_dir}/**/${name}`);
+            const doxyfiles = glob.sync(globs);
             if (doxyfiles.length === 1) {
                 config_file = path.normalize(doxyfiles[0].toString());
                 break;
@@ -129,6 +133,10 @@ export function findDoxyFile(filepath: string) {
                 throw Error(`Package in '${config_file_dir}' does not contain a Doxyfile.`);
             }
             config_file_dir = path.dirname(config_file_dir);
+
+            if(config_file_dir === workspace.uri.fsPath) {
+                break;
+            }
         }
     }
 
