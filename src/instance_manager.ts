@@ -7,15 +7,16 @@ export class InstanceManager {
 
     private diagnostics: vscode.DiagnosticCollection;
 
-    constructor(public context: vscode.ExtensionContext) {
-    }
+    constructor(public context: vscode.ExtensionContext) {}
 
     public getInstance(filepath: string): Doxygen {
         if (filepath === undefined) {
             filepath = utils.getCurrentFileDir();
 
             if (filepath === undefined) {
-                throw Error(`Running doxygen generation without a focused editor windows does not work. Have a look at the \`configuration_file_override\` setting if you want to be able to run generation this way.\n`);
+                throw Error(
+                    `Running doxygen generation without a focused editor windows does not work. Have a look at the \`configuration_file_override\` setting if you want to be able to run generation this way.\n`
+                );
             }
         }
 
@@ -25,14 +26,18 @@ export class InstanceManager {
         }
 
         let [basedir, doxyfile] = tmp;
-        console.log(`Found doxygen config file '${doxyfile}' in path ${basedir}`);
+        console.log(
+            `Found doxygen config file '${doxyfile}' in path ${basedir}`
+        );
 
         if (this.instances.has(basedir)) {
             let instance = this.instances.get(basedir);
             if (instance.doxyfile === doxyfile) {
                 return instance;
             } else {
-                console.log(`Doxyfile in ${basedir} was changed from ${instance.doxyfile} to ${doxyfile}`);
+                console.log(
+                    `Doxyfile in ${basedir} was changed from ${instance.doxyfile} to ${doxyfile}`
+                );
                 return this.makeInstance(basedir, doxyfile);
             }
         } else {

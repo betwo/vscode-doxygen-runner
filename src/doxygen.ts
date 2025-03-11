@@ -18,24 +18,31 @@ export class Doxygen {
     private menu_patched_path: string;
     private storage_path: string;
 
-    constructor(public context: vscode.ExtensionContext,
+    constructor(
+        public context: vscode.ExtensionContext,
         public basedir: string,
-        public doxyfile: string) {
-
+        public doxyfile: string
+    ) {
         let cfg = utils.parseConfig(doxyfile);
         this.project_name = cfg['project_name'];
         this.output_directory = utils.readPath(cfg['output_directory']);
         if (path.isAbsolute(this.output_directory)) {
             this.html_root_directory = path.join(this.output_directory, 'html');
         } else {
-            this.html_root_directory = path.join(this.basedir, this.output_directory, 'html');
+            this.html_root_directory = path.join(
+                this.basedir,
+                this.output_directory,
+                'html'
+            );
         }
-        this.diagnostics = vscode.languages.createDiagnosticCollection(`doxygen_runner:${this.html_root_directory})`);
+        this.diagnostics = vscode.languages.createDiagnosticCollection(
+            `doxygen_runner:${this.html_root_directory})`
+        );
 
         this.storage_path = this.context.storageUri.fsPath;
         fs.mkdir(this.storage_path, { recursive: true }, (err) => {
             if (err !== null) {
-                console.error("cannot use vscode extension storage");
+                console.error('cannot use vscode extension storage');
                 this.storage_path = this.context.extensionPath;
             }
         });
@@ -43,27 +50,44 @@ export class Doxygen {
 
     // generate the doxygen documentation for the project containing `filepath`
     public generateDocumentation(filepath: string) {
-        Promise.resolve(vscode.window.withProgress({
-            location: vscode.ProgressLocation.Notification,
-            title: `Doxygen`,
-            cancellable: false,
-
-        }, async (progress, token) => {
-            return this.runDoxygen(progress, token).then(([stdout, stderr]) => {
-                this.diagnostics.clear();
-                problem_matcher.analyze(stderr.replace(/\r/gi, '').split('\n'), this.doxyfile, this.diagnostics);
-                // display the generated documentation
-                let config = vscode.workspace.getConfiguration('doxygen_runner');
-                if (config['view_after_generate']) {
-                    vscode.commands.executeCommand('extension.doxygen-runner.view_doxygen', this.basedir);
+        Promise.resolve(
+            vscode.window.withProgress(
+                {
+                    location: vscode.ProgressLocation.Notification,
+                    title: `Doxygen`,
+                    cancellable: false
+                },
+                async (progress, token) => {
+                    return this.runDoxygen(progress, token).then(
+                        ([stdout, stderr]) => {
+                            this.diagnostics.clear();
+                            problem_matcher.analyze(
+                                stderr.replace(/\r/gi, '').split('\n'),
+                                this.doxyfile,
+                                this.diagnostics
+                            );
+                            // display the generated documentation
+                            let config =
+                                vscode.workspace.getConfiguration(
+                                    'doxygen_runner'
+                                );
+                            if (config['view_after_generate']) {
+                                vscode.commands.executeCommand(
+                                    'extension.doxygen-runner.view_doxygen',
+                                    this.basedir
+                                );
+                            }
+                        }
+                    );
                 }
-            });
-        }));
+            )
+        );
     }
 
-    private runDoxygen(progress: vscode.Progress<{ message?: string; increment?: number; }>,
-        token: vscode.CancellationToken): Promise<string[]> {
-
+    private runDoxygen(
+        progress: vscode.Progress<{ message?: string; increment?: number }>,
+        token: vscode.CancellationToken
+    ): Promise<string[]> {
         let options: child_process.ExecFileOptionsWithStringEncoding = {
             cwd: this.basedir,
             encoding: 'utf8',
@@ -74,46 +98,52 @@ export class Doxygen {
         let executable = config['doxygen_command'];
         let args = [this.doxyfile];
 
-        return new Promise(
-            (resolve, reject) => {
-                console.log(`Running ${executable} in directory ${this.basedir}`);
-                let child = child_process.execFile(executable, args, options,
-                    (err, std_out, std_err) => {
-                        if (err) {
-                            console.log(`error: ${err}`);
-                            vscode.window.showErrorMessage(err.message);
-                            reject();
-                            return;
-                        }
-
-                        resolve([std_out, std_err]);
-                    });
-                token.onCancellationRequested(() => {
-                    child.kill();
-                });
-
-                let buffer = '';
-                let last_update = Date.now();
-                child.stdout.on('data', (data) => {
-                    buffer += data.toString().replace(/\r/gi, '');
-
-                    // split the data into lines
-                    let lines = buffer.split('\n');
-                    // assume that the last line is incomplete, add it back to the buffer
-                    buffer = lines[lines.length - 1];
-
-                    // log the complete lines
-                    for (let lineno = 0; lineno < lines.length - 1; ++lineno) {
-                        console.log(lines[lineno]);
+        return new Promise((resolve, reject) => {
+            console.log(`Running ${executable} in directory ${this.basedir}`);
+            let child = child_process.execFile(
+                executable,
+                args,
+                options,
+                (err, std_out, std_err) => {
+                    if (err) {
+                        console.log(`error: ${err}`);
+                        vscode.window.showErrorMessage(err.message);
+                        reject();
+                        return;
                     }
-                    // if enough time has passed (1 second), update the progress
-                    let now = Date.now();
-                    if (now - last_update > 1000) {
-                        progress.report({ message: lines[lines.length - 2], increment: 0 });
-                        last_update = now;
-                    }
-                });
+
+                    resolve([std_out, std_err]);
+                }
+            );
+            token.onCancellationRequested(() => {
+                child.kill();
             });
+
+            let buffer = '';
+            let last_update = Date.now();
+            child.stdout.on('data', (data) => {
+                buffer += data.toString().replace(/\r/gi, '');
+
+                // split the data into lines
+                let lines = buffer.split('\n');
+                // assume that the last line is incomplete, add it back to the buffer
+                buffer = lines[lines.length - 1];
+
+                // log the complete lines
+                for (let lineno = 0; lineno < lines.length - 1; ++lineno) {
+                    console.log(lines[lineno]);
+                }
+                // if enough time has passed (1 second), update the progress
+                let now = Date.now();
+                if (now - last_update > 1000) {
+                    progress.report({
+                        message: lines[lines.length - 2],
+                        increment: 0
+                    });
+                    last_update = now;
+                }
+            });
+        });
     }
 
     // display the doxygen configuration
@@ -122,7 +152,7 @@ export class Doxygen {
             this.viewIndex();
         } else {
             this.reloadPage();
-            if(this.active_panel.visible !== true) {
+            if (this.active_panel.visible !== true) {
                 this.active_panel.reveal();
             }
         }
@@ -135,7 +165,10 @@ export class Doxygen {
 
     // get the path to the generated index file
     public getIndexHtmlPath() {
-        return vscode.Uri.joinPath(vscode.Uri.file(this.html_root_directory), "index.html");
+        return vscode.Uri.joinPath(
+            vscode.Uri.file(this.html_root_directory),
+            'index.html'
+        );
     }
 
     // convert a relative path to a vscode resource for the web view
@@ -144,14 +177,23 @@ export class Doxygen {
             return path;
         }
 
-        if(path === "navtree.js") {
+        if (path === 'navtree.js') {
             // special handling for patching navtree resources
-            return this.active_panel.webview.asWebviewUri(vscode.Uri.file(this.navtree_patched_path));
-        } else if(path === "menu.js") {
+            return this.active_panel.webview.asWebviewUri(
+                vscode.Uri.file(this.navtree_patched_path)
+            );
+        } else if (path === 'menu.js') {
             // special handling for patching menu resources
-            return this.active_panel.webview.asWebviewUri(vscode.Uri.file(this.menu_patched_path));
+            return this.active_panel.webview.asWebviewUri(
+                vscode.Uri.file(this.menu_patched_path)
+            );
         } else {
-            const res = this.active_panel.webview.asWebviewUri(vscode.Uri.joinPath(vscode.Uri.file(this.html_root_directory), path));
+            const res = this.active_panel.webview.asWebviewUri(
+                vscode.Uri.joinPath(
+                    vscode.Uri.file(this.html_root_directory),
+                    path
+                )
+            );
             console.log(`Mapping path ${path} to resource ${res}`);
             return res;
         }
@@ -170,17 +212,21 @@ export class Doxygen {
         if (anchor_idx >= 0) {
             html_file = uri.substr(0, anchor_idx);
             fragment = uri.substr(anchor_idx + 1);
-            console.log(`Showing page ${html_file} [${fragment}] extracted from anchor ${uri}`);
+            console.log(
+                `Showing page ${html_file} [${fragment}] extracted from anchor ${uri}`
+            );
         } else {
             html_file = uri;
             fragment = undefined;
             console.log(`Showing page ${html_file} extracted from url ${uri}`);
         }
 
-        if (fragment !== undefined && html_file === "") {
+        if (fragment !== undefined && html_file === '') {
             // in-page anchor link
             html_file = this.view_history.pop();
-            console.log(`Showing page ${html_file} [${fragment}] extracted from history`);
+            console.log(
+                `Showing page ${html_file} [${fragment}] extracted from history`
+            );
         }
 
         // update history
@@ -202,73 +248,104 @@ export class Doxygen {
 
             // create a web view if we don't have one
             if (this.active_panel === undefined) {
-                console.log("creating panel");
+                console.log('creating panel');
                 this.createPanel();
             }
 
-            console.log("setting html");
-            this.active_panel.webview.html = this.injectHtml(content.toString(), fragment, uri);
+            console.log('setting html');
+            this.active_panel.webview.html = this.injectHtml(
+                content.toString(),
+                fragment,
+                uri
+            );
         });
     }
 
     private sanitizePath(path: string) {
-        if(path.startsWith("/")) {
+        if (path.startsWith('/')) {
             // assume unix-like path
             return path;
         } else {
             // assume Windows path
-            return "/" + path.replace(/\\/g,'/');
+            return '/' + path.replace(/\\/g, '/');
         }
     }
 
     private patchNavtreeFile() {
-        let absfile = path.join(this.html_root_directory, "navtree.js");
+        let absfile = path.join(this.html_root_directory, 'navtree.js');
         if (fs.existsSync(absfile)) {
             const content = fs.readFileSync(absfile);
             const url_prefix = `https://file+.vscode-resource.vscode-cdn.net${this.sanitizePath(this.html_root_directory)}`;
 
             let patched_content = content.toString();
-            patched_content = patched_content.replace('script.src = scriptName', `script.src = '${url_prefix}/' + scriptName`);
-            patched_content = patched_content.replace(`"'+relpath+'sync_off.png`, `"${url_prefix}/sync_off.png`);
-            patched_content = patched_content.replace(`"'+relpath+'sync_on.png`, `"${url_prefix}/sync_on.png`);
+            patched_content = patched_content.replace(
+                'script.src = scriptName',
+                `script.src = '${url_prefix}/' + scriptName`
+            );
+            patched_content = patched_content.replace(
+                `"'+relpath+'sync_off.png`,
+                `"${url_prefix}/sync_off.png`
+            );
+            patched_content = patched_content.replace(
+                `"'+relpath+'sync_on.png`,
+                `"${url_prefix}/sync_on.png`
+            );
 
-            this.navtree_patched_path = path.join(this.context.storageUri.fsPath, `navtree-patched.js`);
+            this.navtree_patched_path = path.join(
+                this.context.storageUri.fsPath,
+                `navtree-patched.js`
+            );
             fs.writeFileSync(this.navtree_patched_path, patched_content);
         }
     }
 
     private patchMenuFile() {
-        let absfile = path.join(this.html_root_directory, "menu.js");
+        let absfile = path.join(this.html_root_directory, 'menu.js');
         if (fs.existsSync(absfile)) {
             const content = fs.readFileSync(absfile);
             const url_prefix = `https://file+.vscode-resource.vscode-cdn.net${this.html_root_directory}`;
             let patched_content = content.toString();
-            patched_content = patched_content.replace(`src="'+relPath+`, `src="${url_prefix}/'+`);
+            patched_content = patched_content.replace(
+                `src="'+relPath+`,
+                `src="${url_prefix}/'+`
+            );
 
-            this.menu_patched_path = path.join(this.context.storageUri.path, `menu-patched.js`);
+            this.menu_patched_path = path.join(
+                this.context.storageUri.path,
+                `menu-patched.js`
+            );
             fs.writeFileSync(this.menu_patched_path, patched_content);
         }
     }
 
     // modify the html code of the doxygen documenation to work within a web view
     private injectHtml(html: string, fragment: string, uri: string) {
+        html = html.replace(
+            '<head>',
+            `<head>\n` +
+                `<meta http-equiv="Content-Security-Policy" content="` +
+                `default-src 'none';` +
+                `img-src ${this.active_panel.webview.cspSource} https:; ` +
+                `script-src ${this.active_panel.webview.cspSource} http: https: 'unsafe-eval' 'unsafe-inline'; ` +
+                `style-src ${this.active_panel.webview.cspSource} 'unsafe-inline';` +
+                `">`
+        );
 
-        html = html.replace('<head>', `<head>\n` +
-            `<meta http-equiv="Content-Security-Policy" content="` +
-            `default-src 'none';` +
-            `img-src ${this.active_panel.webview.cspSource} https:; ` +
-            `script-src ${this.active_panel.webview.cspSource} http: https: 'unsafe-eval' 'unsafe-inline'; ` +
-            `style-src ${this.active_panel.webview.cspSource} 'unsafe-inline';` +
-            `">`);
+        html = html.replace(
+            RegExp('(href=.)(.*\\.css)([^>]*>)', 'g'),
+            (match, pre, path, post) => pre + this.pathToResource(path) + post
+        );
+        html = html.replace(
+            RegExp('(src=.)([^>]*\\.js)([^>]*>)', 'g'),
+            (match, pre, path, post) => pre + this.pathToResource(path) + post
+        );
+        html = html.replace(
+            RegExp('(src=.)(.*\\.(?:png|svg|gif))([^>]*>)', 'g'),
+            (match, pre, path, post) => pre + this.pathToResource(path) + post
+        );
 
-        html = html.replace(RegExp('(href=.)(.*\\.css)([^>]*>)', 'g'),
-            (match, pre, path, post) => pre + this.pathToResource(path) + post);
-        html = html.replace(RegExp('(src=.)([^>]*\\.js)([^>]*>)', 'g'),
-            (match, pre, path, post) => pre + this.pathToResource(path) + post);
-        html = html.replace(RegExp('(src=.)(.*\\.(?:png|svg|gif))([^>]*>)', 'g'),
-            (match, pre, path, post) => pre + this.pathToResource(path) + post);
-
-        html = html.replace('</html>',
+        html = html.replace(
+            '</html>',
             `<script>
   (function() {
     const vscode = acquireVsCodeApi();
@@ -338,10 +415,14 @@ export class Doxygen {
   }())
 
   </script>
-  </html>`);
+  </html>`
+        );
 
-        html = html.replace('</body>', `<p><small>This page has been modified in order to work inside of Virtual Studio Code.
-        <a class="external" href="file://${this.html_root_directory}/${uri}">Click here</a> to see the documentation in the browser.</small></p></body>`);
+        html = html.replace(
+            '</body>',
+            `<p><small>This page has been modified in order to work inside of Virtual Studio Code.
+        <a class="external" href="file://${this.html_root_directory}/${uri}">Click here</a> to see the documentation in the browser.</small></p></body>`
+        );
         return html;
     }
 
@@ -375,7 +456,6 @@ export class Doxygen {
         this.viewDoxygen(next, false);
     }
 
-
     // create a new web view panel
     private createPanel() {
         // Create and show a new webview
@@ -390,31 +470,31 @@ export class Doxygen {
                 localResourceRoots: [
                     vscode.Uri.file(this.context.storageUri.fsPath),
                     vscode.Uri.file(this.html_root_directory)
-                ],
+                ]
             }
         );
 
-        panel.webview.onDidReceiveMessage((ev) => {
-            switch (ev.command) {
-                case "external_link":
-                    vscode.env.openExternal(vscode.Uri.parse(ev.url));
-                    break;
-                case "link":
-                    this.viewDoxygen(ev.url);
-                    break;
-                case "history":
-                    switch (ev.direction) {
-                        case 'back':
-                            this.historyBack();
-                            break;
-                        case 'forward':
-                            this.historyForward();
-                            break;
-                    }
-                    break;
-
-            }
-        },
+        panel.webview.onDidReceiveMessage(
+            (ev) => {
+                switch (ev.command) {
+                    case 'external_link':
+                        vscode.env.openExternal(vscode.Uri.parse(ev.url));
+                        break;
+                    case 'link':
+                        this.viewDoxygen(ev.url);
+                        break;
+                    case 'history':
+                        switch (ev.direction) {
+                            case 'back':
+                                this.historyBack();
+                                break;
+                            case 'forward':
+                                this.historyForward();
+                                break;
+                        }
+                        break;
+                }
+            },
             undefined,
             this.context.subscriptions
         );

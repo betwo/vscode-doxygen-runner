@@ -24,7 +24,9 @@ export function check() {
         console.log(`Doxygen version: ${output}`);
         return true;
     } catch (err) {
-        throw Error(`Doxygen is not installed or not correcly configured.\Command '${executable} ${args.join(' ')}' failed with '${err.message}'.`);
+        throw Error(
+            `Doxygen is not installed or not correcly configured.\Command '${executable} ${args.join(' ')}' failed with '${err.message}'.`
+        );
     }
 }
 
@@ -46,7 +48,10 @@ export function parseConfig(doxyfile) {
             if (match) {
                 let output_directory = match[1];
                 if (output_directory.endsWith(path.sep)) {
-                    output_directory = output_directory.substr(0, output_directory.length - 1);
+                    output_directory = output_directory.substr(
+                        0,
+                        output_directory.length - 1
+                    );
                 }
                 cfg['output_directory'] = output_directory;
             }
@@ -63,7 +68,7 @@ export function parseConfig(doxyfile) {
 }
 
 export function readPath(raw: string): string {
-    return path.normalize(raw.replace(/[\/\\\s]+$/gi, ""));
+    return path.normalize(raw.replace(/[\/\\\s]+$/gi, ''));
 }
 
 // find a Doxygen configuration file for the project containing `filepath`
@@ -71,24 +76,39 @@ export function findDoxyFile(filepath: string) {
     let config = vscode.workspace.getConfiguration('doxygen_runner');
     let config_file: string;
     let config_file_dir: string;
-    if (config['configuration_file_override'] !== "") {
+    if (config['configuration_file_override'] !== '') {
         // use the override
         config_file = config['configuration_file_override'];
         if (config_file.indexOf('${workspaceFolder}') >= 0) {
-            let matching_folders = vscode.workspace.workspaceFolders.filter((folder) => { return fs.existsSync(config_file.replace("${workspaceFolder}", folder.uri.fsPath)); });
+            let matching_folders = vscode.workspace.workspaceFolders.filter(
+                (folder) => {
+                    return fs.existsSync(
+                        config_file.replace(
+                            '${workspaceFolder}',
+                            folder.uri.fsPath
+                        )
+                    );
+                }
+            );
             switch (matching_folders.length) {
                 case 0:
-                    throw Error("Cannot resolve '${workspaceFolder}' in overwritten configuration path, no file found.");
+                    throw Error(
+                        "Cannot resolve '${workspaceFolder}' in overwritten configuration path, no file found."
+                    );
                 case 1:
                     let folder = matching_folders[0].uri.fsPath;
-                    config_file = config_file.replace("${workspaceFolder}", folder);
+                    config_file = config_file.replace(
+                        '${workspaceFolder}',
+                        folder
+                    );
                     break;
                 default:
-                    throw Error("Cannot resolve '${workspaceFolder}' unambiguosly in overwritten configuration path.");
+                    throw Error(
+                        "Cannot resolve '${workspaceFolder}' unambiguosly in overwritten configuration path."
+                    );
             }
         }
         config_file_dir = path.dirname(config_file);
-
     } else {
         if (filepath === undefined) {
             filepath = getCurrentFileDir();
@@ -107,33 +127,43 @@ export function findDoxyFile(filepath: string) {
 
         // go up until we find a unique Doxygen config
         config_file_dir = filepath;
-        let workspace = vscode.workspace.getWorkspaceFolder(vscode.Uri.file(filepath));
+        let workspace = vscode.workspace.getWorkspaceFolder(
+            vscode.Uri.file(filepath)
+        );
         if (workspace === undefined) {
             throw Error(`Path '${filepath}' is not part of the workspace.`);
         }
         while (true) {
             // glob does not work properly with Windows paths. See https://stackoverflow.com/questions/72313482/glob-paths-dont-work-in-my-windows-environment
             // fix: replace Windows path separator with Unix-like path separator.
-            const glob_safe_dir = config_file_dir.replace(/\\/g,'/');
+            const glob_safe_dir = config_file_dir.replace(/\\/g, '/');
 
-            const globs = configuration_filenames.map((name) => `${glob_safe_dir}/**/${name}`);
+            const globs = configuration_filenames.map(
+                (name) => `${glob_safe_dir}/**/${name}`
+            );
             const doxyfiles = glob.sync(globs);
             if (doxyfiles.length === 1) {
                 config_file = path.normalize(doxyfiles[0].toString());
                 break;
             } else if (doxyfiles.length > 1) {
-                vscode.window.showWarningMessage(`Cannot determine unambiguous Doxyfile / doxygen.conf: ${doxyfiles}`);
+                vscode.window.showWarningMessage(
+                    `Cannot determine unambiguous Doxyfile / doxygen.conf: ${doxyfiles}`
+                );
                 return undefined;
             }
 
-            let existing_package_markers = package_markers.filter((filename) => {
-                return fs.existsSync(`${config_file_dir}/${filename}`);
-            });
+            let existing_package_markers = package_markers.filter(
+                (filename) => {
+                    return fs.existsSync(`${config_file_dir}/${filename}`);
+                }
+            );
             if (existing_package_markers.length !== 0) {
-                throw Error(`Package in '${config_file_dir}' does not contain a Doxyfile.`);
+                throw Error(
+                    `Package in '${config_file_dir}' does not contain a Doxyfile.`
+                );
             }
 
-            if(config_file_dir === workspace.uri.fsPath) {
+            if (config_file_dir === workspace.uri.fsPath) {
                 break;
             } else {
                 config_file_dir = path.dirname(config_file_dir);
@@ -147,13 +177,17 @@ export function findDoxyFile(filepath: string) {
         let output_dir = cfg['output_directory'];
 
         // first we search upward in the file tree until we find the "INPUT" directories specified in the doxyfile
-        let input_directories = cfg['input_directories'].filter((filepath) => !filepath.startsWith("."));
+        let input_directories = cfg['input_directories'].filter(
+            (filepath) => !filepath.startsWith('.')
+        );
         if (input_directories.length > 0) {
             let parent_dir = path.dirname(config_file);
             while (!containsInputDirectories(parent_dir, input_directories)) {
                 let parent = path.dirname(parent_dir);
                 if (parent === parent_dir) {
-                    console.log(`Could not find an existing directory containing the INPUT directories`);
+                    console.log(
+                        `Could not find an existing directory containing the INPUT directories`
+                    );
                     break;
                 }
                 parent_dir = parent;
@@ -198,8 +232,10 @@ export function findDoxyFile(filepath: string) {
         }
 
         if (!containsInputDirectories(base_dir, input_directories)) {
-            vscode.window.showWarningMessage("Possible configuration problem in your Doxyfile: " +
-                `Not all input directories could be found relative to ${base_dir}`);
+            vscode.window.showWarningMessage(
+                'Possible configuration problem in your Doxyfile: ' +
+                    `Not all input directories could be found relative to ${base_dir}`
+            );
         }
 
         return [base_dir, config_file];
