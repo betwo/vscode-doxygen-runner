@@ -210,7 +210,7 @@ export class Doxygen {
             this.active_panel.webview.html = this.injectHtml(content.toString(), fragment, uri);
         });
     }
-    
+
     private sanitizePath(path: string) {
         if(path.startsWith("/")) {
             // assume unix-like path
@@ -224,39 +224,29 @@ export class Doxygen {
     private patchNavtreeFile() {
         let absfile = path.join(this.html_root_directory, "navtree.js");
         if (fs.existsSync(absfile)) {
-            fs.readFile(absfile, (error, content) => {
-                if (error) {
-                    throw Error(error.message);
-                }
+            const content = fs.readFileSync(absfile);
+            const url_prefix = `https://file+.vscode-resource.vscode-cdn.net${this.sanitizePath(this.html_root_directory)}`;
 
-                const url_prefix = `https://file+.vscode-resource.vscode-cdn.net${this.sanitizePath(this.html_root_directory)}`;
+            let patched_content = content.toString();
+            patched_content = patched_content.replace('script.src = scriptName', `script.src = '${url_prefix}/' + scriptName`);
+            patched_content = patched_content.replace(`"'+relpath+'sync_off.png`, `"${url_prefix}/sync_off.png`);
+            patched_content = patched_content.replace(`"'+relpath+'sync_on.png`, `"${url_prefix}/sync_on.png`);
 
-                let patched_content = content.toString();
-                patched_content = patched_content.replace('script.src = scriptName', `script.src = '${url_prefix}/' + scriptName`);
-                patched_content = patched_content.replace(`"'+relpath+'sync_off.png`, `"${url_prefix}/sync_off.png`);
-                patched_content = patched_content.replace(`"'+relpath+'sync_on.png`, `"${url_prefix}/sync_on.png`);
-
-                this.navtree_patched_path = path.join(this.context.storageUri.fsPath, `navtree-patched.js`);
-                fs.writeFileSync(this.navtree_patched_path, patched_content);
-            });
+            this.navtree_patched_path = path.join(this.context.storageUri.fsPath, `navtree-patched.js`);
+            fs.writeFileSync(this.navtree_patched_path, patched_content);
         }
     }
 
     private patchMenuFile() {
         let absfile = path.join(this.html_root_directory, "menu.js");
         if (fs.existsSync(absfile)) {
-            fs.readFile(absfile, (error, content) => {
-                if (error) {
-                    throw Error(error.message);
-                }
+            const content = fs.readFileSync(absfile);
+            const url_prefix = `https://file+.vscode-resource.vscode-cdn.net${this.html_root_directory}`;
+            let patched_content = content.toString();
+            patched_content = patched_content.replace(`src="'+relPath+`, `src="${url_prefix}/'+`);
 
-                const url_prefix = `https://file+.vscode-resource.vscode-cdn.net${this.html_root_directory}`;
-                let patched_content = content.toString();
-                patched_content = patched_content.replace(`src="'+relPath+`, `src="${url_prefix}/'+`);
-
-                this.menu_patched_path = path.join(this.context.storageUri.path, `menu-patched.js`);
-                fs.writeFileSync(this.menu_patched_path, patched_content);
-            });
+            this.menu_patched_path = path.join(this.context.storageUri.path, `menu-patched.js`);
+            fs.writeFileSync(this.menu_patched_path, patched_content);
         }
     }
 

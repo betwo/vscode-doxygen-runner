@@ -132,10 +132,11 @@ export function findDoxyFile(filepath: string) {
             if (existing_package_markers.length !== 0) {
                 throw Error(`Package in '${config_file_dir}' does not contain a Doxyfile.`);
             }
-            config_file_dir = path.dirname(config_file_dir);
 
             if(config_file_dir === workspace.uri.fsPath) {
                 break;
+            } else {
+                config_file_dir = path.dirname(config_file_dir);
             }
         }
     }
