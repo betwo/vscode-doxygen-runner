@@ -13,6 +13,10 @@ export class InstanceManager {
     public getInstance(filepath: string): Doxygen {
         if (filepath === undefined) {
             filepath = utils.getCurrentFileDir();
+
+            if (filepath === undefined) {
+                throw Error(`Running doxygen generation without a focused editor windows does not work. Have a look at the \`configuration_file_override\` setting if you want to be able to run generation this way.\n`);
+            }
         }
 
         let tmp = utils.findDoxyFile(filepath);
