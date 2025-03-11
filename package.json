@@ -4,7 +4,7 @@
     "publisher": "betwo",
     "license": "MIT",
     "description": "Support for generating and previewing doxygen documentation",
-    "version": "1.11.2",
+    "version": "1.11.3",
     "icon": "assets/icon.png",
     "repository": {
         "type": "git",

@@ -90,3 +90,11 @@ and this project adheres to
 
 - Fixed handling of Windows-like paths when adapting doxygen output for WebView
   API
+
+## [1.11.3] - 2025-03-11
+
+### Fixed
+
+- Fix race condition due to async file handling during patching
+- Tweak crawler to also support nested doc or src directories specifically on
+  the top level
