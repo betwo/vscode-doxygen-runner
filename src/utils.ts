@@ -134,14 +134,10 @@ export function findDoxyFile(filepath: string) {
             throw Error(`Path '${filepath}' is not part of the workspace.`);
         }
         while (true) {
-            // glob does not work properly with Windows paths. See https://stackoverflow.com/questions/72313482/glob-paths-dont-work-in-my-windows-environment
-            // fix: replace Windows path separator with Unix-like path separator.
-            const glob_safe_dir = config_file_dir.replace(/\\/g, '/');
-
-            const globs = configuration_filenames.map(
-                (name) => `${glob_safe_dir}/**/${name}`
+            const doxyfiles = findMatchingFiles(
+                configuration_filenames,
+                config_file_dir
             );
-            const doxyfiles = glob.sync(globs);
             if (doxyfiles.length === 1) {
                 config_file = path.normalize(doxyfiles[0].toString());
                 break;
@@ -242,6 +238,32 @@ export function findDoxyFile(filepath: string) {
     }
 
     return undefined;
+}
+
+function findMatchingFiles(
+    configuration_filenames: string[],
+    config_file_dir: string
+) {
+    // map file names to glob expressions
+    let glob_expressions: string[];
+    let glob_options = {};
+    if (process.platform === 'win32') {
+        // glob does not work properly with Windows paths. See https://stackoverflow.com/questions/72313482/glob-paths-dont-work-in-my-windows-environment
+        // fix: replace Windows path separator with Unix-like path separator.
+        const glob_safe_dir = config_file_dir.replace(/\\/g, '/');
+        // note: see https://github.com/betwo/vscode-doxygen-runner/issues/23 on why the expression looks like this for Windows support.
+        glob_expressions = configuration_filenames.map(
+            (name: string) => `${glob_safe_dir}/?(**/)${name}`
+        );
+        glob_options = { caseSensitiveMatch: false };
+    } else {
+        glob_expressions = configuration_filenames.map(
+            (name: string) => `${config_file_dir}/**/${name}`
+        );
+    }
+
+    // actually run glob now
+    return glob.sync(glob_expressions, glob_options);
 }
 
 function containsInputDirectories(parent_dir, input_directories) {
