@@ -98,3 +98,9 @@ and this project adheres to
 - Fix race condition due to async file handling during patching
 - Tweak crawler to also support nested doc or src directories specifically on
   the top level
+
+## [1.11.4] - 2025-03-15
+
+### Fixed
+
+- Fixed more Windows specific issues when crawling for Doxyfiles
