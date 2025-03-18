@@ -104,3 +104,9 @@ and this project adheres to
 ### Fixed
 
 - Fixed more Windows specific issues when crawling for Doxyfiles
+
+## [1.11.5] - 2025-03-18
+
+### Fixed
+
+- Fixed more Windows specific issues with side menu patching
