@@ -303,7 +303,7 @@ export class Doxygen {
         let absfile = path.join(this.html_root_directory, 'menu.js');
         if (fs.existsSync(absfile)) {
             const content = fs.readFileSync(absfile);
-            const url_prefix = `https://file+.vscode-resource.vscode-cdn.net${this.html_root_directory}`;
+            const url_prefix = `https://file+.vscode-resource.vscode-cdn.net${this.sanitizePath(this.html_root_directory)}`;
             let patched_content = content.toString();
             patched_content = patched_content.replace(
                 `src="'+relPath+`,
@@ -311,7 +311,7 @@ export class Doxygen {
             );
 
             this.menu_patched_path = path.join(
-                this.context.storageUri.path,
+                this.context.storageUri.fsPath,
                 `menu-patched.js`
             );
             fs.writeFileSync(this.menu_patched_path, patched_content);
