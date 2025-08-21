@@ -291,10 +291,12 @@ export class Doxygen {
                 `"'+relpath+'sync_off.png`,
                 `"${url_prefix}/sync_off.png`
             );
+            patched_content = patched_content.replace("'+SYNCOFFMSG+'", '');
             patched_content = patched_content.replace(
                 `"'+relpath+'sync_on.png`,
                 `"${url_prefix}/sync_on.png`
             );
+            patched_content = patched_content.replace("'+SYNCONMSG+'", '');
 
             this.navtree_patched_path = path.join(
                 this.context.storageUri.fsPath,
