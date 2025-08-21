@@ -96,7 +96,7 @@ export class Doxygen {
         // call doxygen in a subprocess
         let config = vscode.workspace.getConfiguration('doxygen_runner');
         let executable = config['doxygen_command'];
-        let args = [this.doxyfile];
+        let args = ["-"];
 
         return new Promise((resolve, reject) => {
             console.log(`Running ${executable} in directory ${this.basedir}`);
@@ -143,6 +143,11 @@ export class Doxygen {
                     last_update = now;
                 }
             });
+
+            // read in config and pipe to stdin
+            const doxyconfig = fs.readFileSync(this.doxyfile, 'utf8');
+            child.stdin.write(doxyconfig.normalize());
+            child.stdin.end();
         });
     }
 
