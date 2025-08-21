@@ -110,3 +110,9 @@ and this project adheres to
 ### Fixed
 
 - Fixed more Windows specific issues with side menu patching
+
+## [1.11.6] - 2025-08-21
+
+### Fixed
+
+- Using stdin when calling doxygen to support path names on Windows that contain non-ascii characters.
